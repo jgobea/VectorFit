@@ -46,9 +46,12 @@ export default function SignUpScreen() {
           </Text>
 
           {success ? (
-            <Text className="text-center font-body text-body text-primary-light dark:text-primary">
-              Check your email to confirm your account, then log in.
-            </Text>
+            <View className="gap-section">
+              <Text className="text-center font-body text-body text-primary-light dark:text-primary">
+                Check your email to confirm your account, then log in.
+              </Text>
+              <Button label="Back to Login" onPress={() => router.replace('/(auth)/login')} />
+            </View>
           ) : (
             <View className="gap-section">
               <Input
