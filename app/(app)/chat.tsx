@@ -1,22 +1,64 @@
-import { useRouter } from 'expo-router';
-import { Text } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { FlashList, type FlashListRef } from '@shopify/flash-list';
+import { useEffect, useRef } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button } from '@/components/ui/Button';
+import { ChatBubble } from '@/components/features/ChatBubble';
+import { ChatErrorBanner } from '@/components/features/ChatErrorBanner';
+import { ChatHeader } from '@/components/features/ChatHeader';
+import { ChatInput } from '@/components/features/ChatInput';
+import { QuickSuggestionPills } from '@/components/features/QuickSuggestionPills';
+import { useChat } from '@/hooks/useChat';
+import type { ChatUIMessage } from '@/types/chat';
 
-// Minimal stub — Trainer AI Chat is INSTRUCTIONS.md page #3, built in its own
-// approval-gated phase after Dashboard. This exists only so Dashboard's
-// "Chat with Trainer" quick-access button isn't a dead end.
 export default function ChatScreen() {
-  const router = useRouter();
+  const { messages, isLoading, isSending, error, sendMessage, retry, canRetry } = useChat();
+  const listRef = useRef<FlashListRef<ChatUIMessage>>(null);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      listRef.current?.scrollToEnd({ animated: true });
+    }
+  }, [messages]);
 
   return (
-    <SafeAreaView className="flex-1 items-center justify-center gap-4 bg-background-light px-6 dark:bg-background">
-      <Text className="text-center font-display text-h2 text-primary-light dark:text-primary">AI Trainer Chat</Text>
-      <Text className="text-center font-body text-body text-secondary-light dark:text-secondary">
-        Coming soon — this page is built next.
-      </Text>
-      <Button label="Back to Dashboard" variant="secondary" onPress={() => router.back()} />
+    <SafeAreaView className="flex-1 bg-background-light dark:bg-background" edges={['top', 'bottom']}>
+      <ChatHeader />
+
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
+      >
+        <View className="flex-1">
+          {isLoading ? (
+            <View className="flex-1 items-center justify-center">
+              <ActivityIndicator color="#00E5FF" />
+            </View>
+          ) : messages.length === 0 ? (
+            <View className="flex-1 items-center justify-center gap-3 px-10">
+              <Feather name="message-circle" size={28} color="#A0A0A8" />
+              <Text className="text-center font-body text-body text-secondary-light dark:text-secondary">
+                Ask about form, routines, nutrition, or recovery — your trainer is ready.
+              </Text>
+            </View>
+          ) : (
+            <FlashList
+              ref={listRef}
+              data={messages}
+              renderItem={({ item }) => <ChatBubble message={item} />}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16 }}
+            />
+          )}
+        </View>
+
+        {error && <ChatErrorBanner message={error} onRetry={canRetry ? retry : undefined} />}
+
+        <QuickSuggestionPills onSelect={sendMessage} disabled={isSending} />
+        <ChatInput onSend={sendMessage} disabled={isSending} />
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

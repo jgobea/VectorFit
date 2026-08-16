@@ -1,14 +1,20 @@
 // Deno Edge Function — the only place @google/generative-ai is called from.
-// GEMINI_API_KEY never reaches the client. Auth is enforced at the platform
-// level (see supabase/config.toml [functions.chat] verify_jwt = true), so a
-// request only reaches this handler once its JWT is verified.
+// GEMINI_API_KEY never reaches the client. Auth is verified manually below
+// (see supabase/config.toml [functions.chat] verify_jwt = false) rather than
+// at the platform level: platform-level verify_jwt rejects the CORS
+// preflight OPTIONS request — which never carries an Authorization header —
+// before it reaches this file, breaking every browser call.
+import { createClient } from 'npm:@supabase/supabase-js@^2.112.3';
 import { GoogleGenerativeAI } from 'npm:@google/generative-ai@^0.21.0';
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 // DESIGN_SPEC.md § Content Tone & Voice
@@ -16,7 +22,16 @@ const SYSTEM_PROMPT = `You are VectorFit's AI personal trainer. Tone: friendly a
 motivational without being overly casual; explain form/fitness concepts
 clearly and technically but simply; personalize advice using the user's
 name, goals, and progress when given; celebrate wins and normalize
-struggles. Keep replies concise and actionable.`;
+struggles. Keep replies concise and actionable. If you ever get asked to provide a workout plan,
+respond with a short, high-level outline of the plan and a few example exercises,
+but do not provide a full plan. Only talk about exercises and fitness;
+do not give medical advice or discuss nutrition or talk about anything else. avoid generic,
+vague, or repetitive responses; do not make up information or give advice that could be unsafe.
+avoid using filler phrases like "as an AI language model" or "I'm not a medical professional."
+avoid apologizing for not being able to provide information. If you don't know the answer, say so.
+avoid using the user's name in a way that could be interpreted as creepy or invasive.
+dont use emojis or other non-text characters as well as empty words like greetings.
+max response length: 500 characters.`;
 
 interface IncomingMessage {
   role: 'user' | 'assistant';
@@ -52,9 +67,31 @@ Deno.serve(async (req) => {
     });
   }
 
-  if (!GEMINI_API_KEY) {
+  if (!GEMINI_API_KEY || !SUPABASE_URL || !SUPABASE_ANON_KEY) {
     return new Response(JSON.stringify({ error: 'Server misconfigured' }), {
       status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'Missing bearer token' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const {
+    data: { user },
+    error: authError,
+  } = await authClient.auth.getUser();
+  if (authError || !user) {
+    return new Response(JSON.stringify({ error: 'Invalid or expired session' }), {
+      status: 401,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
@@ -80,7 +117,10 @@ Deno.serve(async (req) => {
   try {
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
+      // Alias, not a dated snapshot (e.g. gemini-2.0-flash) — Google retires
+      // dated model versions over time, which turns a hardcoded name into a
+      // silent 404 well after this code was written.
+      model: 'gemini-flash-latest',
       systemInstruction: SYSTEM_PROMPT,
     });
 

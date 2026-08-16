@@ -385,10 +385,12 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
-# Requires a valid user JWT on every request — the chat function never
-# accepts unauthenticated calls.
+# Platform-level verify_jwt rejects the CORS preflight OPTIONS request (it
+# never carries an Authorization header) before it reaches our handler, which
+# breaks browser calls entirely. Auth is verified manually inside
+# supabase/functions/chat/index.ts instead, after OPTIONS is handled.
 [functions.chat]
-verify_jwt = true
+verify_jwt = false
 
 [analytics]
 enabled = true
