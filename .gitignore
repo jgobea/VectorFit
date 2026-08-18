@@ -43,3 +43,8 @@ example
 # generated native folders
 /ios
 /android
+
+# internal dev docs (not project-facing)
+AGENTS.md
+INSTRUCTIONS.md
+DESIGN_SPEC.md
