@@ -9,7 +9,7 @@ import { Montserrat_800ExtraBold } from '@expo-google-fonts/montserrat';
 import { useFonts } from 'expo-font';
 import { Slot } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -49,14 +49,14 @@ export default function RootLayout() {
 
   const ready = fontsLoaded && !isInitializing && themeHydrated;
 
-  const onLayoutRootView = useCallback(() => {
+  useEffect(() => {
     if (ready) SplashScreen.hideAsync();
   }, [ready]);
 
   if (!ready) return null;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <Slot />
       </SafeAreaProvider>
