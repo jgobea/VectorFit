@@ -1,3 +1,5 @@
+import { fetch } from 'expo/fetch';
+
 import { supabase } from './supabase';
 
 export interface ChatMessagePayload {

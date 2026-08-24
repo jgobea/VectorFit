@@ -6,6 +6,7 @@
 // before it reaches this file, breaking every browser call.
 import { createClient } from 'npm:@supabase/supabase-js@^2.112.3';
 import { GoogleGenerativeAI } from 'npm:@google/generative-ai@^0.21.0';
+import { withRetry } from './retry.ts';
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
@@ -119,8 +120,10 @@ Deno.serve(async (req) => {
     const model = genAI.getGenerativeModel({
       // Alias, not a dated snapshot (e.g. gemini-2.0-flash) — Google retires
       // dated model versions over time, which turns a hardcoded name into a
-      // silent 404 well after this code was written.
-      model: 'gemini-flash-latest',
+      // silent 404 well after this code was written. flash-lite over
+      // flash-latest: much higher free-tier daily quota, less exposed to
+      // demand-related 503s.
+      model: 'gemini-flash-lite-latest',
       systemInstruction: SYSTEM_PROMPT,
     });
 
@@ -131,7 +134,7 @@ Deno.serve(async (req) => {
     const latest = messages[messages.length - 1];
 
     const chat = model.startChat({ history });
-    const result = await chat.sendMessageStream(latest.content);
+    const result = await withRetry(() => chat.sendMessageStream(latest.content));
 
     const stream = new ReadableStream({
       async start(controller) {
