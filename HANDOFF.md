@@ -1,123 +1,203 @@
 # VectorFit — Handoff
 
-**Written:** 2026-08-18. **For:** a fresh Claude Code session continuing this
+**Written:** 2026-08-24. **For:** a fresh Claude Code session continuing this
 build.
 **Read first:** `INSTRUCTIONS.md` (build workflow, stack, rules) and
 `DESIGN_SPEC.md` (the design source of truth) at the project root — still on
-disk, just gitignored now (see below), don't re-derive their contents here.
+disk, gitignored (see prior handoff entries), don't re-derive their contents
+here.
 
 ## Where things stand
 
-Git: on branch **`chore/expo-sdk-54`** (off `master`), pushed to the `github`
-remote. Working tree clean. Commits on this branch, oldest first:
-`56c9346` (deps downgrade), `f00857c` (web import.meta fix), `6485240`
-(splash screen fix), `b8f747b` (untrack internal dev docs), plus whatever
-commit added this file. **Not merged to `master` yet** — deliberately kept
-on its own branch since a full SDK downgrade touches every
-`expo-*`/RN/Reanimated/FlashList version across already-approved pages; see
-Next up.
+Git: on branch **`chore/expo-sdk-54`** (off `master`), pushed to the
+`github` remote. Working tree clean after this session's commits (see log
+for exact SHAs — not repeated here, `git log` is authoritative). **Still not
+merged to `master`** — same reasoning as before: this branch also carries
+the SDK 54 downgrade from an earlier session, and Live Review (this
+session's main work) is not yet fully QA'd end-to-end. Ask the user before
+merging.
 
-Remotes — two, don't confuse them:
-- `origin` → `C:/Users/david/supa/tesis/./VectorFit`, a **local filesystem
-  path**. This `CopiaVectorFit` checkout is a local clone of that other
-  folder, not of GitHub.
-- `github` → `https://github.com/jgobea/VectorFit.git`, the real GitHub
-  repo (added this session). Push over HTTPS needed one interactive
-  browser login via Windows' Git Credential Manager; should be cached on
-  this machine now. Non-interactive `git push` calls get denied outright by
-  the auto-mode classifier regardless of prior conversation authorization —
-  ask the user to run it themselves (`! git push ...`) or get fresh
-  confirmation before retrying.
+**Setup phase, Login, Dashboard, Trainer AI Chat:** unchanged structurally
+this session — Chat got bug fixes only (see below), not a rebuild.
 
-Task tracker is not being used to persist state across sessions — this file
-is the source of truth for progress, not `TaskList`.
+## What changed this session: Trainer AI Chat fixes, then Trainer AI Live Review built
 
-**Setup phase, Login, Dashboard, Trainer AI Chat (done, approved):**
-unchanged this session, see prior commits — not re-described here.
+### Trainer AI Chat — three bug fixes, already deployed live
 
-## What changed this session: Expo 57 → 54 downgrade
+1. **Streaming was silently broken on native** (worked on web). RN's global
+   `fetch` doesn't expose a real `ReadableStream` on `response.body` on
+   native — `lib/gemini.ts` was throwing `Chat request failed with status
+   200` (i.e. the request succeeded but `response.body` was falsy). Fixed
+   by importing `fetch` from `expo/fetch` instead of the RN global — it's
+   Expo's WinterCG-compliant fetch, which does support streaming on native.
+   Confirmed via `https://docs.expo.dev/versions/v54.0.0/sdk/expo/`
+   (AGENTS.md requires reading versioned SDK docs before writing code).
+2. **Intermittent 502s** turned out to be Gemini itself returning `503
+   Service Unavailable — high demand` for `gemini-flash-latest`. Diagnosed
+   by pulling real Supabase Edge Function logs via the Management API (see
+   Environment quirks below for the query pattern) — the function's own
+   `console.error` had the actual Gemini error, which a plain "status 502"
+   report from the client never showed. Added `supabase/functions/chat/retry.ts`
+   (`withRetry`, 3 attempts, short backoff) — helps but doesn't fully absorb
+   sustained demand spikes.
+3. **Switched model** `gemini-flash-latest` → `gemini-flash-lite-latest`
+   (still an alias, not a dated snapshot — same rationale as the existing
+   code comment). The user found via Google AI Studio that flash-lite has a
+   much higher free-tier daily request quota than flash, which was close to
+   exhausting. Verified the model exists via Gemini's `ListModels` API
+   before using it — never guessed.
 
-The user asked again (previous handoff had this explicitly declined — see
-correction below). Full summary, don't re-derive from the diff:
+All three deployed via `supabase functions deploy chat --project-ref
+wyfxwvdzqnylevwypony` — each deploy needs the user's explicit go-ahead (the
+auto-mode classifier blocks it outright) and a fresh `SUPABASE_ACCESS_TOKEN`
+if you don't already have one in the conversation.
 
-- **Dependency downgrade.** `expo` `~57.0.12` → `~54.0.0`, and the whole
-  `expo-*`/RN/Reanimated/router/etc. tree with it. Versions were **not**
-  hand-picked from memory — cross-checked via npm dist-tags, then finalized
-  with `npx expo install --fix` (the authoritative source), which only had
-  to correct `react-native` by one patch version. `npx expo-doctor` passes
-  18/18 after.
-- **Dropped two unused packages:** `@expo/ui` (no SDK 54 release exists at
-  all — its npm versions jump straight from `0.x`/`1.x` to `55.x`) and
-  `expo-glass-effect` (has an SDK 54 release, but was also unused). Neither
-  was imported anywhere in app code — confirmed via grep before removing,
-  user approved removing both.
-- **Added `babel-preset-expo` as an explicit devDependency.** It was only
-  ever present nested under `node_modules/expo/node_modules/babel-preset-expo`
-  and npm wasn't hoisting it, so `babel.config.js`'s direct
-  `require('babel-preset-expo')` failed with "Cannot find module". If you
-  ever see that error again after a dependency change, check hoisting
-  first.
-- **Fixed a web-only bundling crash:** `stores/uiStore.ts` imports `persist`
-  from `zustand/middleware`, which resolves to zustand's ESM build on web
-  and contains a bare `import.meta.env` reference. Metro serves the web
-  bundle as one classic (non-module) `<script>`, so browsers threw
-  `SyntaxError: Cannot use 'import.meta' outside a module` before any app
-  code ran — blank page. Fixed in `babel.config.js` by passing
-  `web: { unstable_transformImportMeta: true }` to `babel-preset-expo`,
-  which rewrites any `import.meta` (including inside `node_modules`) to
-  `globalThis.__ExpoImportMetaRegistry`. Requires `expo start --clear` to
-  pick up (Metro caches babel transforms per-file).
-- **Fixed a real app bug, found via Expo Go testing:**
-  `app/_layout.tsx`'s splash-hide call lived inside
-  `GestureHandlerRootView`'s `onLayout` prop, which only fires once per
-  mount. If `ready` flipped to `true` without a fresh layout pass following
-  it, `SplashScreen.hideAsync()` never ran — the native splash stayed
-  visually on top forever even though the login screen underneath had
-  already rendered and was receiving touches (reported by the user as
-  "los campos están ahí pero invisibles debajo de la pantalla de carga").
-  Fixed by moving the call into a `useEffect` keyed on `ready`, independent
-  of any layout event.
-- **Untracked `AGENTS.md`, `INSTRUCTIONS.md`, `DESIGN_SPEC.md` from git**
-  (added to `.gitignore`), at the user's request — they're internal
-  dev-process docs, not project-facing. They still exist locally and you
-  should still read them; they just won't show up in `git status`/diffs
-  going forward and won't be part of future commits. **`HANDOFF.md` stays
-  tracked deliberately** — it's the cross-session handoff mechanism.
-- **Expo Go now works for this project.** Verified end-to-end: bundle
-  downloads, app loads, login screen renders and is interactive on a real
-  Android device via Expo Go SDK 54, connected over LAN
-  (`exp://<LAN-IP>:8081`). Web preview (`expo start --web`) still works
-  too — same Metro instance serves both.
+### Trainer AI Live Review — built, two real bugs found and fixed, one known unfixable limitation remains
 
-### Correction to the previous handoff
+Read `DESIGN_SPEC.md` §D and the QuickPose docs
+(`https://docs.quickpose.ai/docs/MobileSDK/...`) before touching any of
+this — same as always. The 18-exercise Exercises doc 404s on WebFetch; the
+user keeps a working link list — ask them for it if you need it again
+(their `links.txt` at the project root, gitignored, not something you can
+regenerate from a public URL).
 
-That version said: *"Expo Go cannot be used to preview this project... do
-not revisit \[the SDK 54 downgrade] unless the user explicitly asks
-again."* The user did ask again this session. Ignore that old guidance —
-Expo Go is now the primary way the user wants to verify native-only
-features going forward (per `INSTRUCTIONS.md`'s QuickPose section, Live
-Review needs a real device anyway).
+**What was built**, deliberately expanded past `DESIGN_SPEC.md`'s literal
+description per explicit user request (a giant single-screen exercise list
+wasn't "friendly"):
+
+- `app/(app)/live-review.tsx` — thin shell: physical-device gate, then
+  `LiveReviewSetup` (no config chosen) or `LiveReviewWorkout` (config
+  chosen).
+- `components/features/live-review/LiveReviewSetup.tsx` — exercise picked
+  via a dropdown-style modal (`ExercisePickerModal.tsx`, backed by
+  `hooks/useExerciseCatalog.ts`), reps/sets/rest picked via button chips
+  (`OptionButtonRow.tsx`) — no free-text input anywhere, per the user's
+  explicit ask.
+- `components/features/live-review/LiveReviewWorkout.native.tsx` /
+  `.web.tsx` — the actual multi-set workout: session → rest → next set →
+  ... → summary. `hooks/usePoseSession.ts` owns the QuickPose result stream
+  and per-set tallies for the whole workout. `targetReps` is a threshold
+  that surfaces a "Finish Set" button, not a hard cap — reps keep counting
+  past it (explicit user request, for training to failure).
+- `supabase/migrations/20260818210000_seed_exercises.sql` — seeded 18
+  QuickPose-supported exercises into the (previously-empty)
+  `exercises` table, since the Live Review picker needs real rows to show.
+  Applied directly via the Management API (same pattern as always — see
+  Environment quirks) and backfilled into
+  `supabase_migrations.schema_migrations` by hand. `overarmReachBilateral`
+  deliberately excluded — QuickPose's own docs mark it iOS-only.
+- The `.native.tsx`/`.web.tsx` split exists because
+  `@quickpose/react-native`'s native view uses `codegenNativeComponent`,
+  which crashes Metro's **web** bundle at import time (not just at
+  runtime) — any file that imports anything from that package, even just
+  `QuickPoseThresholdCounter`, pulls in the same broken import
+  transitively, since it's all one module entry point. Only `import type`
+  (fully erased) is safe on the web side. Added
+  `"moduleSuffixes": [".ios", ".android", ".native", ".web", ""]` to
+  `tsconfig.json` so `tsc` resolves these the same way Metro does (wasn't
+  needed before this — first cross-platform split in the project). ESLint's
+  import resolver still doesn't know about it — there's an
+  `eslint-disable-next-line import/no-unresolved` on the one cross-boundary
+  import in `live-review.tsx`, don't remove it.
+
+**Bug #1 — wrong package name.** `app.json`'s `android.package` was still
+Expo's auto-generated `com.anonymous.VectorFit` placeholder (nobody had set
+it before this session — Chat/Dashboard/Login never needed a real native
+identity since they ran fine in Expo Go). The user's QuickPose SDK key is
+registered to `com.vectorfit.app` specifically. Mismatch caused the SDK to
+initialize locally (camera + skeleton overlay worked for ~1s) then fail an
+async license check with "SDK key invalid" rendered right into the
+feedback-text overlay. Fixed by setting `android.package` and
+`ios.bundleIdentifier` to `com.vectorfit.app` in `app.json` — **but this
+requires `npx expo prebuild --clean` to regenerate the native `android/`
+folder**, not just a rebuild; `expo run:android` alone does NOT re-read
+`app.json` once `android/` already exists on disk. Learned this the hard
+way — if `app.json`'s native-identity fields ever change again, prebuild
+first.
+
+**Bug #2 — real native crash, not the ANR it looked like at first.**
+Tapping "Finish Set" or "Stop Session" after doing actual reps crashed the
+app (`SIGABRT`, `JNI DETECTED ERROR ... GetObjectClass called with pending
+exception org.json.JSONException: Forbidden numeric value: NaN`). Root
+cause, found via `adb logcat -b crash`: QuickPose's own
+`QuickPoseViewManager.kt` (line ~199, shipped as source in
+`node_modules/@quickpose/react-native/android/...`, not a compiled AAR —
+patchable) calls `org.json.JSONObject.put(key, result.value.toDouble())`
+without checking for `NaN`. QuickPose's pose math legitimately produces
+`NaN` for a frame sometimes (an indeterminate angle mid-movement) — more
+reps done live means more chance of hitting one. `org.json` throws on
+NaN/Infinite by spec, and that exception surfaces inside a native JNI
+callback (`mediapipe::android::Graph::CallbackToJava`) that doesn't clear
+it before further JNI calls, aborting the whole process. **Patched** via
+`patch-package` (`patches/@quickpose+react-native+0.6.1.patch`,
+`postinstall: patch-package` added to `package.json`) to skip non-finite
+values instead of crashing. This is a real upstream QuickPose bug, not an
+app bug — worth filing with them (`npx patch-package @quickpose/react-native
+--create-issue` was offered but not run). **Re-apply note:** since this
+patches a *source* file that Gradle compiles locally (not a prebuilt
+binary), any `npm install` that reinstalls the package needs `postinstall`
+to actually run — if you ever see the crash again, check the patch applied
+(`node_modules/@quickpose/react-native/android/.../QuickPoseViewManager.kt`
+around line 199 should have an `isFinite()` guard) before re-diagnosing
+from scratch.
+
+**Known, unfixable-from-here limitation:** `QuickPoseViewManager.kt`'s
+`onViewDetachedFromWindow` **and** `onDropViewInstance` both call
+`quickPose.stop()` synchronously on the UI thread, which does a blocking
+native `Graph.nativeWaitUntilGraphDone()` wait — this froze the app for
+5+ seconds (Android ANR territory, confirmed via MIUI's own watchdog trace
+in logcat) the first time it was tried per-set. Mitigated by never
+unmounting `QuickPoseView` during a workout — `LiveReviewWorkout.native.tsx`
+keeps it mounted across `session`/`resting`/`summary`, rendering `RestTimer`
+and `SessionSummaryModal` as overlays on top instead of replacing the tree.
+This got it down to **one** unavoidable freeze, on `onExit` (user taps
+"Save Session" to leave Live Review entirely) — confirmed still happening
+in this session's last test. There is no further app-level workaround;
+it's baked into the compiled `quickpose-core`/`quickpose-mp` AARs, not the
+patchable source file. Already on the latest npm version (0.6.1) — no
+upgrade available. If this needs to actually go away, it's a QuickPose
+support ticket, not more app-side engineering.
+
+**Not yet confirmed:** whether the NaN patch fully holds under extended
+real use (last test was cut short — user disconnected the USB cable mid
+multi-set test, right after a successful "Save Session" that only hit the
+*known* stop() freeze, not a new crash — promising but not a full
+confirmation). **Do this first** in the next session: reconnect, rebuild
+(`npx expo run:android` — the patch and native fixes are already in
+`app.json`/`patches/`, this should be a fast incremental build), and run a
+real multi-set workout end to end.
+
+### Web preview — broken, cause not found, likely environment-specific
+
+`localhost:8081` in the browser (tested in normal window AND incognito, on
+the same machine running Metro) shows a blank white page with **zero**
+console output and a Network-tab request to `entry.bundle?platform=web...`
+that never gets a status. Meanwhile the exact same URL via `curl` from this
+session's shell consistently returns `200` in ~1.5s. Restarting Metro
+didn't fix it either. Strong suspicion: the user's VPN intercepting
+browser-originated `localhost` traffic specifically (browser
+extension/proxy layer, independent of the OS routing table — which showed
+LAN traffic correctly bypassing the VPN tunnel when checked). **Not
+resolved.** Next session: try a different browser, check the VPN client for
+a "bypass localhost" setting, or test with the VPN fully off if the user
+can. This is very unlikely to be a code issue — Android and web bundles
+both compiled clean every time this was checked.
 
 ## Next up
 
-Per `INSTRUCTIONS.md`'s page order: **Trainer AI Live Review** page
-(camera/pose-estimation, `@quickpose/react-native`). Before that, or
-alongside it:
+Per `INSTRUCTIONS.md`'s page order, Live Review is page #4 — **not yet
+approved/committed as done**, it needs a clean end-to-end confirmation
+first (see "Not yet confirmed" above). After that:
 
-1. **Decide on merging `chore/expo-sdk-54` into `master`.** This session
-   only smoke-tested the login screen; Dashboard and Trainer AI Chat
-   (already approved under SDK 57) haven't been re-verified under SDK 54.
-   Walk them on web and/or Expo Go before merging, or merge first and fix
-   forward — ask the user which they'd rather do.
-2. **`@quickpose/react-native` hasn't actually been exercised yet.** Its
-   peer deps are loose (`react >=18.2.0`, `react-native >=0.75.0`, no
-   conflict), but its native pose-detection code has never run under RN
-   0.81/SDK 54 — that's the real test, not the npm resolution. Re-read
-   `INSTRUCTIONS.md`'s QuickPose section (including its two linked docs)
-   before touching Live Review, same as before.
-3. Follow `INSTRUCTIONS.md`'s Workflow Per Page as usual — `DESIGN_SPEC.md`
-   §D, `ui-radar` (see caveat below), build, `ui-slop-score`,
-   `anti-ui-slop`, **stop for explicit approval** before committing.
+1. Confirm the NaN patch holds under real extended use (see above).
+2. Get explicit approval on Live Review from the user before treating it as
+   done — `INSTRUCTIONS.md`'s workflow requires this before moving on.
+3. Resolve or shelve the web-preview issue — ask the user if it's blocking
+   or if they're fine testing exclusively via the Android dev client for
+   now.
+4. Then: User Info page (page #5, last one in `INSTRUCTIONS.md`'s order).
+5. Revisit the `chore/expo-sdk-54` → `master` merge decision — still
+   pending, still needs the user's explicit call per earlier handoffs.
 
 ## Decisions carried forward from earlier sessions (still true)
 
@@ -128,71 +208,81 @@ alongside it:
 - **react-native-web `ScrollView` defaults to `flexGrow: 1`.** Any
   horizontal `ScrollView` inside a flex column on web needs explicit
   `grow-0 shrink-0` (+ ideally `max-h-*`) or it silently expands.
-- **No third-party Markdown library** — `lib/markdown.ts` +
-  `components/ui/Markdown.tsx` are hand-rolled, deliberately, to avoid
-  another RN 0.86 / React 19 (now RN 0.81/React 19.1) compatibility
-  surprise. Only wired into assistant chat bubbles.
-- Supabase Edge Function (`chat`) deploy gotchas (JWT verification vs. CORS
-  preflight, secrets not auto-present, retired Gemini model names) — see
-  the git history around commit `07e5fae` if you need to touch that
-  function again; not re-described here.
+- **No third-party Markdown library** — hand-rolled in `lib/markdown.ts` +
+  `components/ui/Markdown.tsx`, only wired into assistant chat bubbles.
+- **Expo Go cannot run Live Review at all** — `@quickpose/react-native`
+  ships real native code (not a config plugin), so it's not in the Expo Go
+  binary. A custom dev client (`expo run:android` / `expo run:ios` /
+  EAS Build) is required for this page specifically. Login/Dashboard/Chat
+  still work fine in Expo Go if that's ever useful again.
 
 ## Environment quirks (so you don't re-debug them)
 
-- **Windows doesn't reliably kill the whole `expo start` process tree.**
-  Stopping a background task (or Ctrl+C) can leave an orphaned `node.exe`
-  holding port 8081. If you see "Port 8081 is being used by another
-  process" right after stopping a server, find and kill it:
-  `Get-NetTCPConnection -LocalPort 8081 -State Listen` →
-  `Stop-Process -Id <pid> -Force`.
-- **Metro caches babel transforms on disk.** After editing
-  `babel.config.js`, restart with `expo start --clear` or you'll keep
-  seeing the old (possibly broken) transform output.
-- **Pushing to the `github` remote needs an interactive login the first
-  time** on a new machine/session (Git Credential Manager, browser-based).
-  The auto-mode classifier blocks non-interactive `git push` outright even
-  with prior explicit user authorization in the conversation — hand it to
-  the user as `! git push ...` rather than retrying it yourself
-  silently.
-- **Direct Postgres access is unreachable from this sandbox** (IPv6-only
-  hostname). Use the Management API pattern instead: `POST
-  https://api.supabase.com/v1/projects/{ref}/database/query` with
-  `Authorization: Bearer $SUPABASE_ACCESS_TOKEN` (ask the user for a fresh
-  token — none is stored in the repo), then backfill
-  `supabase_migrations.schema_migrations` by hand. Project ref:
-  `wyfxwvdzqnylevwypony`.
-- **`.env` has real, working project credentials** already filled in —
-  don't ask again. Correctly gitignored. `SUPABASE_ACCESS_TOKEN` is *not*
-  in there — separate personal credential, ask for it again if a function
-  needs (re)deploying.
-- **No `chromium-cli`.** For your own internal checks (not the user-facing
-  deliverable), `npm install playwright-core` into a scratch directory and
-  point it at `C:\Program Files\Google\Chrome\Application\chrome.exe` via
-  `executablePath`.
-- **The `handoff` skill lives at `~/.claude/.agents/skills/` and is NOT
-  invokable through the `Skill` tool** — read `SKILL.md` there directly and
-  follow it manually. This file deliberately lives at the project root
-  (not the OS temp dir the skill's own instructions say to use) and stays
-  git-tracked (unlike the other internal docs, see above) — both
-  intentional deviations for this project, not oversights.
-- **User verifies pages themselves** — via the running dev server
-  (`expo start --web` URL, or now also Expo Go on a real device) — not via
-  a headless-screenshot report. Hand them the URL/QR; don't build a report
-  as the deliverable.
-- **UIZZE's `ui-radar` is blocked in this environment**: both
-  `https://uizze.com/api/search` and `/search` return HTTP 403 to
-  `WebFetch`. Confirmed repeatedly across sessions — treat as a hard
-  environment-level block, not worth retrying; proceed straight from
-  `DESIGN_SPEC.md` per the skill's own "don't stop useful work" guidance.
+- **Windows doesn't reliably kill the whole `expo start` process tree** —
+  same as before, check `Get-NetTCPConnection -LocalPort 8081 -State
+  Listen` → `Stop-Process -Id <pid> -Force` if port 8081 is stuck.
+- **adb wireless pairing failed repeatedly this session** (`error: protocol
+  fault (couldn't read status message): No error`), even with fresh codes
+  and an adb server restart — the user has an always-on VPN, plausibly the
+  same browser/localhost interception behavior as the web issue above,
+  though this was over LAN with a real IP, not localhost, so it might be a
+  separate VPN quirk. **USB cable worked fine** — use that, don't burn time
+  on wireless pairing with this VPN active. If USB install fails with
+  `INSTALL_FAILED_USER_RESTRICTED`, check the phone (Xiaomi/MIUI) for
+  Developer Options → **"Install via USB"** — a separate toggle from USB
+  debugging, MIUI-specific, easy to miss.
+- **`adb reverse tcp:8081 tcp:8081` drops on USB re-enumeration** (cable
+  wiggle, phone screen lock/unlock cycles, etc.) — if the app shows
+  "Unable to load script" / "Cannot connect to Metro", re-run the reverse
+  command before assuming something's actually broken. **Better fix**:
+  just re-run `npx expo run:android` — it connects over the phone's LAN IP
+  by default (`vectorfit://expo-development-client/?url=http://<LAN-IP>:8081`),
+  which doesn't depend on the USB reverse tunnel at all and survived
+  reconnects that broke the manual `adb reverse` approach.
+- **Reading real Supabase Edge Function logs** (not just client-side status
+  codes) needs the Management API's Logflare-backed query endpoint, not the
+  `database/query` one used for SQL:
+  ```
+  POST https://api.supabase.com/v1/projects/{ref}/analytics/endpoints/logs.all
+  Authorization: Bearer $SUPABASE_ACCESS_TOKEN
+  body: {"sql": "select timestamp, event_message from function_logs order by timestamp desc limit 40",
+         "iso_timestamp_start": "<ISO>", "iso_timestamp_end": "<ISO>"}
+  ```
+  Table names: `function_edge_logs` for request/status lines, `function_logs`
+  for the function's own `console.*` output. **Must pass an explicit
+  timestamp range** — omitting it silently returns an empty result, not an
+  error, which looks identical to "no logs exist."
+- **`patch-package` chokes on Gradle build artifacts inside
+  `node_modules/`** if a native module's source got compiled locally
+  (`android/build/` inside the package) — `git add` fails with "Filename
+  too long" on Windows before the patch is even generated. Delete that
+  `android/build/` directory (it's disposable, regenerated on next Gradle
+  run) before running `npx patch-package <name>`, don't just add
+  `--exclude`, which didn't reliably dodge it in this session.
+- **`.env` has real, working project credentials** — don't ask again.
+  `SUPABASE_ACCESS_TOKEN` still isn't in there — separate personal
+  credential, ask again if needed (a token from earlier this session may
+  still be live, but don't assume — ask fresh rather than guessing an old
+  value).
+- **User verifies pages themselves** via the running dev server, not a
+  headless-screenshot report — unchanged from before. Also: **don't take
+  screenshots yourself** (no `playwright`/`claude-in-chrome` for viewing
+  this app's UI) — the user pastes screenshots when something needs to be
+  seen. Reading logs (adb logcat, browser console/network — as text, not
+  screenshotted) is fine and expected; it's specifically app-UI
+  screenshots that are off-limits.
+- **UIZZE's `ui-radar` is still blocked** (403 from `WebFetch`) — same as
+  every prior session, don't retry it.
 
 ## Suggested skills for the next session
 
-- `ui-radar` — probably still blocked (see above), don't let that block
-  progress either way.
-- `ui-slop-score` / `anti-ui-slop` — self-score and fix Live Review before
-  calling it done, per `INSTRUCTIONS.md`'s Workflow Per Page.
-- `supabase` — `pose_sessions` table already exists in the schema; re-check
-  the security checklist if Live Review needs any new RLS-touching writes.
-- `handoff` — if this next session also runs long, produce another one
-  (read `~/.claude/.agents/skills/handoff/SKILL.md` directly, per the note
-  above).
+- `ui-slop-score` / `anti-ui-slop` — self-score and fix Live Review's new
+  screens (Setup, RestTimer, SessionSummaryModal) before calling the page
+  done — this session prioritized getting it *working* over a design
+  self-review pass.
+- `supabase` — re-check the security checklist now that `pose_sessions`
+  writes are live (Live Review's `usePoseSession.ts` inserts on every
+  finished workout).
+- `handoff` — if the next session also runs long, produce another one
+  (read `~/.claude/.agents/skills/handoff/SKILL.md` directly — it's not
+  invokable through the `Skill` tool, same note as every prior handoff).
