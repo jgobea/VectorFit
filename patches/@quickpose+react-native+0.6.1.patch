@@ -1,0 +1,25 @@
+diff --git a/node_modules/@quickpose/react-native/android/src/main/java/ai/quickpose/reactnative/QuickPoseViewManager.kt b/node_modules/@quickpose/react-native/android/src/main/java/ai/quickpose/reactnative/QuickPoseViewManager.kt
+index 60955f4..d50ec8d 100644
+--- a/node_modules/@quickpose/react-native/android/src/main/java/ai/quickpose/reactnative/QuickPoseViewManager.kt
++++ b/node_modules/@quickpose/react-native/android/src/main/java/ai/quickpose/reactnative/QuickPoseViewManager.kt
+@@ -196,7 +196,19 @@ class QuickPoseViewManager : SimpleViewManager<FrameLayout>() {
+                         val feedbacksJson = JSONObject()
+                         for ((featureKey, feature) in currentFeatures) {
+                             featureResults[feature]?.let { result ->
+-                                resultsJson.put(featureKey, result.value.toDouble())
++                                // org.json.JSONObject.put(String, Double) throws
++                                // JSONException on NaN/Infinite — QuickPose's own
++                                // pose math can produce NaN for a frame (e.g. an
++                                // angle that's momentarily indeterminate). That
++                                // exception surfaces inside a native JNI callback
++                                // (mediapipe Graph::CallbackToJava) which doesn't
++                                // clear it before further JNI calls, aborting the
++                                // whole process (JNI DETECTED ERROR / SIGABRT).
++                                // Skip non-finite values instead of crashing.
++                                val value = result.value.toDouble()
++                                if (value.isFinite()) {
++                                    resultsJson.put(featureKey, value)
++                                }
+                             }
+                             val fb = feedback?.get(feature)?.displayString
+                             if (!fb.isNullOrEmpty()) {
