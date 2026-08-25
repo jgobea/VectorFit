@@ -163,6 +163,53 @@ camera session, wrapped in `try/catch` so nothing on that background
 thread can take the process down again. **Confirmed working** — full
 multi-set workout including "Save Session" exit, no freeze, no crash.
 
+### Setup screen reworked per explicit user request (past what DESIGN_SPEC.md describes)
+
+Once the crash/freeze issues above were fixed and confirmed, the user asked
+for a friendlier pre-workout config screen — this is scope DESIGN_SPEC.md
+doesn't cover at all, added on direct request, not invented independently:
+
+- Exercise picker is now a bottom-sheet dropdown
+  (`components/features/live-review/ExercisePickerModal.tsx`) grouped by
+  body area, instead of a full-page list. Groups come from `Exercise.category`
+  — seeded via `supabase/migrations/20260825140000_categorize_exercises.sql`
+  (Upper Body / Lower Body / Core / Full Body, standard fitness taxonomy,
+  not QuickPose-specific — applied directly, same Management API pattern as
+  every other migration this project uses).
+- `components/features/live-review/NumberStepperField.tsx` — reps/sets are
+  now +/- buttons around an integer-only text input (digits stripped via
+  regex on every keystroke), not button chips.
+- `components/features/live-review/RestSlider.tsx` — rest between sets is
+  a `@react-native-community/slider` (new native dependency) in 15s steps,
+  label switches to a minutes format past 60s.
+- `LiveReviewSetup.tsx` now wraps the whole form in one centered `Card`
+  instead of a full-height scroll list.
+- `onExit` (Save Session) now does `router.replace('/(app)/dashboard')`
+  instead of returning to the Live Review setup screen.
+
+**Two rendering bugs found and fixed during this pass** — worth knowing
+about if similar symptoms show up elsewhere in the app:
+- `TextInput` digits were visually clipped at the top on Android inside a
+  fixed-height box. `text-center` (NativeWind) only affects horizontal
+  alignment — needed an explicit `style={{ textAlignVertical: 'center',
+  paddingVertical: 0 }}` to override Android's built-in vertical padding.
+- The exercise picker sheet cut off abruptly partway down instead of
+  reaching its intended height. A NativeWind `max-h-[70%]` on a `View`
+  nested inside two `Pressable`s didn't reliably resolve — RN's
+  percentage-height resolution through a non-trivial ancestor chain is
+  flaky on Android. Replaced with a pixel value computed from
+  `Dimensions.get('window').height * 0.7`. If a percentage-based height
+  class ever looks wrong again, suspect this same class of bug first.
+
+Adding the slider (a genuinely new native module, unlike the JS-only
+tweaks earlier this session) needed `npx expo prebuild --clean` before
+`expo run:android` — the first build attempt failed with a Fabric codegen
+error (`Props.h` file not found) because the existing `android/` folder
+predated the dependency and didn't know to generate its codegen artifacts.
+Same lesson as the package-name bug from earlier: any new native
+dependency or `app.json` native-identity change needs a fresh prebuild,
+not just a rebuild.
+
 ### Web preview — broken, cause not found, likely environment-specific
 
 `localhost:8081` in the browser (tested in normal window AND incognito, on
