@@ -1,6 +1,6 @@
 # VectorFit — Handoff
 
-**Written:** 2026-08-24. **For:** a fresh Claude Code session continuing this
+**Written:** 2026-08-25. **For:** a fresh Claude Code session continuing this
 build.
 **Read first:** `INSTRUCTIONS.md` (build workflow, stack, rules) and
 `DESIGN_SPEC.md` (the design source of truth) at the project root — still on
@@ -14,8 +14,9 @@ Git: on branch **`chore/expo-sdk-54`** (off `master`), pushed to the
 for exact SHAs — not repeated here, `git log` is authoritative). **Still not
 merged to `master`** — same reasoning as before: this branch also carries
 the SDK 54 downgrade from an earlier session, and Live Review (this
-session's main work) is not yet fully QA'd end-to-end. Ask the user before
-merging.
+session's main work) hasn't had a design self-review pass or explicit user
+approval yet, even though it's functionally confirmed working. Ask the user
+before merging.
 
 **Setup phase, Login, Dashboard, Trainer AI Chat:** unchanged structurally
 this session — Chat got bug fixes only (see below), not a rebuild.
@@ -141,31 +142,26 @@ to actually run — if you ever see the crash again, check the patch applied
 around line 199 should have an `isFinite()` guard) before re-diagnosing
 from scratch.
 
-**Known, unfixable-from-here limitation:** `QuickPoseViewManager.kt`'s
-`onViewDetachedFromWindow` **and** `onDropViewInstance` both call
-`quickPose.stop()` synchronously on the UI thread, which does a blocking
-native `Graph.nativeWaitUntilGraphDone()` wait — this froze the app for
-5+ seconds (Android ANR territory, confirmed via MIUI's own watchdog trace
-in logcat) the first time it was tried per-set. Mitigated by never
-unmounting `QuickPoseView` during a workout — `LiveReviewWorkout.native.tsx`
-keeps it mounted across `session`/`resting`/`summary`, rendering `RestTimer`
-and `SessionSummaryModal` as overlays on top instead of replacing the tree.
-This got it down to **one** unavoidable freeze, on `onExit` (user taps
-"Save Session" to leave Live Review entirely) — confirmed still happening
-in this session's last test. There is no further app-level workaround;
-it's baked into the compiled `quickpose-core`/`quickpose-mp` AARs, not the
-patchable source file. Already on the latest npm version (0.6.1) — no
-upgrade available. If this needs to actually go away, it's a QuickPose
-support ticket, not more app-side engineering.
-
-**Not yet confirmed:** whether the NaN patch fully holds under extended
-real use (last test was cut short — user disconnected the USB cable mid
-multi-set test, right after a successful "Save Session" that only hit the
-*known* stop() freeze, not a new crash — promising but not a full
-confirmation). **Do this first** in the next session: reconnect, rebuild
-(`npx expo run:android` — the patch and native fixes are already in
-`app.json`/`patches/`, this should be a fast incremental build), and run a
-real multi-set workout end to end.
+**Bug #3 — the "unfixable" freeze on exit, fixed anyway.** The prior
+version of this handoff described `onViewDetachedFromWindow` /
+`onDropViewInstance` both calling `quickPose.stop()` synchronously on the
+UI thread (blocking on a native `Graph.nativeWaitUntilGraphDone()` wait,
+5+ seconds, ANR territory) as an unavoidable QuickPose limitation — the
+call itself is compiled into `quickpose-core`/`quickpose-mp`, not
+patchable. That's still true, but the user pushed on it: the *thread*
+`stop()` runs on is decided by the patchable bridge file, not by
+`stop()` itself. Patched `QuickPoseViewManager.kt` to fire `stop()` on a
+plain background `Thread` instead of inline. First attempt crashed the
+whole app immediately — `onViewDetachedFromWindow` and `onDropViewInstance`
+both call `.stop()`, and once backgrounded the two calls can race: the
+second one hits a graph whose native context the first already tore down
+(`IllegalStateException: Invalid context, tearDown() might have been
+called`), thrown on a bare `Thread` with no handler, which is fatal for
+the whole process. Fixed with a `hasStopped` guard (see
+`stopQuickPoseAsync()` in the patch) so `stop()` only ever fires once per
+camera session, wrapped in `try/catch` so nothing on that background
+thread can take the process down again. **Confirmed working** — full
+multi-set workout including "Save Session" exit, no freeze, no crash.
 
 ### Web preview — broken, cause not found, likely environment-specific
 
@@ -185,18 +181,19 @@ both compiled clean every time this was checked.
 
 ## Next up
 
-Per `INSTRUCTIONS.md`'s page order, Live Review is page #4 — **not yet
-approved/committed as done**, it needs a clean end-to-end confirmation
-first (see "Not yet confirmed" above). After that:
+Per `INSTRUCTIONS.md`'s page order, Live Review is page #4. Functionally
+confirmed working end-to-end this session (full multi-set workout, no
+crashes, no freezes) — **still not formally "approved" per
+`INSTRUCTIONS.md`'s workflow** (no design self-review pass done yet, see
+Suggested skills). After that:
 
-1. Confirm the NaN patch holds under real extended use (see above).
-2. Get explicit approval on Live Review from the user before treating it as
+1. Get explicit approval on Live Review from the user before treating it as
    done — `INSTRUCTIONS.md`'s workflow requires this before moving on.
-3. Resolve or shelve the web-preview issue — ask the user if it's blocking
+2. Resolve or shelve the web-preview issue — ask the user if it's blocking
    or if they're fine testing exclusively via the Android dev client for
    now.
-4. Then: User Info page (page #5, last one in `INSTRUCTIONS.md`'s order).
-5. Revisit the `chore/expo-sdk-54` → `master` merge decision — still
+3. Then: User Info page (page #5, last one in `INSTRUCTIONS.md`'s order).
+4. Revisit the `chore/expo-sdk-54` → `master` merge decision — still
    pending, still needs the user's explicit call per earlier handoffs.
 
 ## Decisions carried forward from earlier sessions (still true)

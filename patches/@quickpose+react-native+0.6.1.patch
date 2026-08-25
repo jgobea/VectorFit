@@ -1,8 +1,72 @@
 diff --git a/node_modules/@quickpose/react-native/android/src/main/java/ai/quickpose/reactnative/QuickPoseViewManager.kt b/node_modules/@quickpose/react-native/android/src/main/java/ai/quickpose/reactnative/QuickPoseViewManager.kt
-index 60955f4..d50ec8d 100644
+index 60955f4..b16fdc1 100644
 --- a/node_modules/@quickpose/react-native/android/src/main/java/ai/quickpose/reactnative/QuickPoseViewManager.kt
 +++ b/node_modules/@quickpose/react-native/android/src/main/java/ai/quickpose/reactnative/QuickPoseViewManager.kt
-@@ -196,7 +196,19 @@ class QuickPoseViewManager : SimpleViewManager<FrameLayout>() {
+@@ -39,6 +39,29 @@ class QuickPoseViewManager : SimpleViewManager<FrameLayout>() {
+     private var currentFeatures: List<Pair<String, Feature>> = emptyList()
+     private var appContext: android.content.Context? = null
+ 
++    // Guards against calling quickPose.stop() more than once per instance.
++    // Both onViewDetachedFromWindow and onDropViewInstance call it (RN's
++    // normal unmount sequence fires both), and once backgrounded (see
++    // stopQuickPoseAsync) a second call can race the first and hit a
++    // graph whose native context is already torn down
++    // (IllegalStateException: "Invalid context, tearDown() might have
++    // been called"), thrown on a bare Thread with no handler — fatal for
++    // the whole process, not just that call.
++    private var hasStopped = false
++
++    private fun stopQuickPoseAsync() {
++        if (hasStopped) return
++        hasStopped = true
++        val qp = quickPose
++        Thread {
++            try {
++                qp?.stop()
++            } catch (e: Exception) {
++                android.util.Log.w(REACT_CLASS, "quickPose.stop() failed", e)
++            }
++        }.start()
++    }
++
+     override fun getName(): String = REACT_CLASS
+ 
+     override fun createViewInstance(reactContext: ThemedReactContext): FrameLayout {
+@@ -98,7 +121,14 @@ class QuickPoseViewManager : SimpleViewManager<FrameLayout>() {
+             }
+ 
+             override fun onViewDetachedFromWindow(v: View) {
+-                quickPose?.stop()
++                // quickPose.stop() (compiled into quickpose-core, not
++                // patchable) does a blocking native
++                // Graph.nativeWaitUntilGraphDone() wait — calling it here
++                // synchronously froze the UI thread for 5+ seconds (Android
++                // ANR territory) on every unmount. stopQuickPoseAsync()
++                // moves it off the main thread; the wait itself doesn't get
++                // any faster, but it no longer blocks rendering/input.
++                stopQuickPoseAsync()
+                 cameraSwitchView?.stop()
+             }
+         })
+@@ -112,7 +142,8 @@ class QuickPoseViewManager : SimpleViewManager<FrameLayout>() {
+     }
+ 
+     override fun onDropViewInstance(view: FrameLayout) {
+-        quickPose?.stop()
++        // See onViewDetachedFromWindow above — same blocking-stop issue.
++        stopQuickPoseAsync()
+         cameraSwitchView?.stop()
+         quickPose = null
+         cameraSwitchView = null
+@@ -167,6 +198,7 @@ class QuickPoseViewManager : SimpleViewManager<FrameLayout>() {
+ 
+         val qp = QuickPose(activity, sdkKey = sdkKey)
+         quickPose = qp
++        hasStopped = false
+ 
+         val csvView = QuickPoseCameraSwitchView(activity, qp)
+         cameraSwitchView = csvView
+@@ -196,7 +228,19 @@ class QuickPoseViewManager : SimpleViewManager<FrameLayout>() {
                          val feedbacksJson = JSONObject()
                          for ((featureKey, feature) in currentFeatures) {
                              featureResults[feature]?.let { result ->
