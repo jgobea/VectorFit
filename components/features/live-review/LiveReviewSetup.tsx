@@ -6,13 +6,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ExercisePickerModal } from '@/components/features/live-review/ExercisePickerModal';
-import { OptionButtonRow } from '@/components/features/live-review/OptionButtonRow';
+import { NumberStepperField } from '@/components/features/live-review/NumberStepperField';
+import { RestSlider } from '@/components/features/live-review/RestSlider';
 import type { SessionConfig } from '@/hooks/usePoseSession';
 import type { Exercise } from '@/types/workout';
-
-const REP_OPTIONS = [6, 8, 10, 12, 15, 20];
-const SET_OPTIONS = [1, 2, 3, 4, 5];
-const REST_OPTIONS = [15, 30, 45, 60, 90, 120];
 
 interface LiveReviewSetupProps {
   onStart: (config: SessionConfig) => void;
@@ -20,7 +17,8 @@ interface LiveReviewSetupProps {
 
 // DESIGN_SPEC.md §D flow: "Select Exercise → Position device." This is that
 // step, expanded per the user's request into a full pre-workout config —
-// exercise, reps, sets, rest — using taps only, no typing.
+// exercise, reps, sets, rest — using taps only, no free typing, framed in a
+// single centered card matching the rest of the app's surface style.
 export function LiveReviewSetup({ onStart }: LiveReviewSetupProps) {
   const [exercise, setExercise] = useState<Exercise | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -30,34 +28,40 @@ export function LiveReviewSetup({ onStart }: LiveReviewSetupProps) {
 
   return (
     <SafeAreaView className="flex-1 bg-background-light dark:bg-background">
-      <ScrollView contentContainerClassName="gap-6 px-4 pb-6 pt-4" keyboardShouldPersistTaps="handled">
-        <Text className="font-display text-h2 text-primary-light dark:text-primary">Live Review</Text>
+      <ScrollView
+        contentContainerClassName="flex-grow items-center justify-center px-4 py-6"
+        keyboardShouldPersistTaps="handled"
+      >
+        <Card className="w-full max-w-md gap-6">
+          <Text className="text-center font-display text-h2 text-primary-light dark:text-primary">Live Review</Text>
 
-        <View className="gap-2">
-          <Text className="font-body-semibold text-small text-secondary-light dark:text-secondary">Exercise</Text>
-          <Card onPress={() => setPickerOpen(true)} className="flex-row items-center justify-between">
-            <Text className="font-body-semibold text-body text-primary-light dark:text-primary">
-              {exercise?.name ?? 'Choose an exercise'}
-            </Text>
-            <Feather name="chevron-down" size={20} color="#00E5FF" />
-          </Card>
-        </View>
+          <View className="gap-2">
+            <Text className="font-body-semibold text-small text-secondary-light dark:text-secondary">Exercise</Text>
+            <Card onPress={() => setPickerOpen(true)} className="flex-row items-center justify-between">
+              <Text className="font-body-semibold text-body text-primary-light dark:text-primary">
+                {exercise?.name ?? 'Choose an exercise'}
+              </Text>
+              <Feather name="chevron-down" size={20} color="#00E5FF" />
+            </Card>
+          </View>
 
-        <OptionButtonRow label="Reps per set" options={REP_OPTIONS} value={targetReps} onChange={setTargetReps} />
-        <OptionButtonRow label="Sets" options={SET_OPTIONS} value={totalSets} onChange={setTotalSets} />
-        <OptionButtonRow
-          label="Rest between sets"
-          options={REST_OPTIONS}
-          value={restSeconds}
-          onChange={setRestSeconds}
-          formatOption={(s) => (s < 60 ? `${s}s` : `${s / 60}m`)}
-        />
+          <View className="flex-row gap-4">
+            <View className="flex-1">
+              <NumberStepperField label="Reps" value={targetReps} onChange={setTargetReps} />
+            </View>
+            <View className="flex-1">
+              <NumberStepperField label="Sets" value={totalSets} onChange={setTotalSets} />
+            </View>
+          </View>
 
-        <Button
-          label="Start Workout"
-          disabled={!exercise}
-          onPress={() => exercise && onStart({ exercise, targetReps, totalSets, restSeconds })}
-        />
+          <RestSlider value={restSeconds} onChange={setRestSeconds} />
+
+          <Button
+            label="Start Workout"
+            disabled={!exercise}
+            onPress={() => exercise && onStart({ exercise, targetReps, totalSets, restSeconds })}
+          />
+        </Card>
       </ScrollView>
 
       <ExercisePickerModal

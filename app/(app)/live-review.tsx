@@ -40,5 +40,5 @@ export default function LiveReviewScreen() {
     return <LiveReviewSetup onStart={setConfig} />;
   }
 
-  return <LiveReviewWorkout config={config} onExit={() => setConfig(null)} />;
+  return <LiveReviewWorkout config={config} onExit={() => router.replace('/(app)/dashboard')} />;
 }
