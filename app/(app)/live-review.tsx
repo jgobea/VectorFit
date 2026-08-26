@@ -1,6 +1,6 @@
 import * as Device from 'expo-device';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -12,6 +12,7 @@ import { LiveReviewSetup } from '@/components/features/live-review/LiveReviewSet
 // eslint-disable-next-line import/no-unresolved
 import { LiveReviewWorkout } from '@/components/features/live-review/LiveReviewWorkout';
 import type { SessionConfig } from '@/hooks/usePoseSession';
+import { useUiStore } from '@/stores/uiStore';
 
 // INSTRUCTIONS.md: "Camera requires a physical device — show a clear
 // fallback UI on simulators." Checked once at module scope, not per-render.
@@ -20,10 +21,20 @@ const IS_PHYSICAL_DEVICE = Device.isDevice;
 export default function LiveReviewScreen() {
   const router = useRouter();
   const [config, setConfig] = useState<SessionConfig | null>(null);
+  const setLiveReviewActive = useUiStore((s) => s.setLiveReviewActive);
+
+  // Hides app/(app)/_layout.tsx's tab bar only once an actual camera
+  // session is on screen (config set) — not during this setup form, which
+  // needs the tab bar as its only way back to another tab. Cleanup always
+  // resets it, covering both a config change and unmounting this screen.
+  useEffect(() => {
+    setLiveReviewActive(config !== null);
+    return () => setLiveReviewActive(false);
+  }, [config, setLiveReviewActive]);
 
   if (!IS_PHYSICAL_DEVICE) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center gap-4 bg-background-light px-6 dark:bg-background">
+      <SafeAreaView className="flex-1 items-center justify-center gap-4 bg-background-light px-6 dark:bg-background" edges={['top']}>
         <Text className="text-center font-display text-h2 text-primary-light dark:text-primary">
           Physical Device Required
         </Text>

@@ -19,7 +19,7 @@ const corsHeaders = {
 };
 
 // DESIGN_SPEC.md § Content Tone & Voice
-const SYSTEM_PROMPT = `You are VectorFit's AI personal trainer. Tone: friendly and
+const BASE_SYSTEM_PROMPT = `You are VectorFit's AI personal trainer. Tone: friendly and
 motivational without being overly casual; explain form/fitness concepts
 clearly and technically but simply; personalize advice using the user's
 name, goals, and progress when given; celebrate wins and normalize
@@ -33,6 +33,44 @@ avoid apologizing for not being able to provide information. If you don't know t
 avoid using the user's name in a way that could be interpreted as creepy or invasive.
 dont use emojis or other non-text characters as well as empty words like greetings.
 max response length: 500 characters.`;
+
+interface UserProfileRow {
+  full_name: string | null;
+  age: number | null;
+  gender: string | null;
+  height_cm: number | null;
+  weight_kg: number | null;
+  body_type: string | null;
+  primary_goal: string | null;
+  experience_level: string | null;
+  workout_frequency_days: number | null;
+  injuries_limitations: string | null;
+  ai_feedback_intensity: string | null;
+  ai_coaching_style: string | null;
+}
+
+// Renders only the fields the user actually filled in (onboarding/Profile
+// are both skippable/partial) — an empty section is worse than no section.
+function buildProfileContext(profile: UserProfileRow | null): string {
+  if (!profile) return '';
+
+  const lines: string[] = [];
+  if (profile.full_name) lines.push(`Name: ${profile.full_name}`);
+  if (profile.age) lines.push(`Age: ${profile.age}`);
+  if (profile.gender) lines.push(`Gender: ${profile.gender}`);
+  if (profile.height_cm) lines.push(`Height: ${profile.height_cm} cm`);
+  if (profile.weight_kg) lines.push(`Weight: ${profile.weight_kg} kg`);
+  if (profile.body_type) lines.push(`Body type: ${profile.body_type}`);
+  if (profile.primary_goal) lines.push(`Primary goal: ${profile.primary_goal}`);
+  if (profile.experience_level) lines.push(`Experience level: ${profile.experience_level}`);
+  if (profile.workout_frequency_days) lines.push(`Workout frequency: ${profile.workout_frequency_days}x / week`);
+  if (profile.injuries_limitations) lines.push(`Injuries / limitations: ${profile.injuries_limitations}`);
+  if (profile.ai_coaching_style) lines.push(`Preferred coaching style: ${profile.ai_coaching_style}`);
+  if (profile.ai_feedback_intensity) lines.push(`Preferred feedback intensity: ${profile.ai_feedback_intensity}`);
+
+  if (lines.length === 0) return '';
+  return `\n\nHere is what you know about this specific user — use it to personalize your\nanswers (e.g. tailor exercise suggestions to their goal and experience level,\nrespect stated injuries/limitations, match the requested feedback intensity\nand coaching style). Do not recite this list back to them verbatim.\n${lines.join('\n')}`;
+}
 
 interface IncomingMessage {
   role: 'user' | 'assistant';
@@ -116,6 +154,14 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const { data: profile } = await authClient
+      .from('users')
+      .select(
+        'full_name, age, gender, height_cm, weight_kg, body_type, primary_goal, experience_level, workout_frequency_days, injuries_limitations, ai_feedback_intensity, ai_coaching_style'
+      )
+      .eq('id', user.id)
+      .single<UserProfileRow>();
+
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
       // Alias, not a dated snapshot (e.g. gemini-2.0-flash) — Google retires
@@ -124,7 +170,7 @@ Deno.serve(async (req) => {
       // flash-latest: much higher free-tier daily quota, less exposed to
       // demand-related 503s.
       model: 'gemini-flash-lite-latest',
-      systemInstruction: SYSTEM_PROMPT,
+      systemInstruction: BASE_SYSTEM_PROMPT + buildProfileContext(profile ?? null),
     });
 
     const history = messages.slice(0, -1).map((m) => ({

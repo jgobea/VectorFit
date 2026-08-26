@@ -12,7 +12,7 @@ interface InputProps extends TextInputProps {
 // Every field carries its own default/focus/error state — DESIGN_SPEC.md
 // calls for real-time inline validation, not just on-submit.
 export const Input = forwardRef<TextInput, InputProps>(function Input(
-  { label, error, isPassword, secureTextEntry, onFocus, onBlur, ...textInputProps },
+  { label, error, isPassword, secureTextEntry, onFocus, onBlur, multiline, ...textInputProps },
   ref
 ) {
   const [isFocused, setIsFocused] = useState(false);
@@ -28,11 +28,17 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
     <View>
       <Text className="mb-2 font-body-medium text-small text-secondary-light dark:text-secondary">{label}</Text>
       <View
-        className={`flex-row items-center rounded-xl border bg-surface-light px-4 dark:bg-surface ${borderClass}`}
+        className={`flex-row items-center rounded-xl border bg-surface-light px-4 dark:bg-surface ${
+          multiline ? 'py-3' : ''
+        } ${borderClass}`}
       >
         <TextInput
           ref={ref}
-          className="h-14 flex-1 font-body text-body text-primary-light dark:text-primary"
+          multiline={multiline}
+          textAlignVertical={multiline ? 'top' : 'center'}
+          className={`flex-1 font-body text-body text-primary-light dark:text-primary ${
+            multiline ? 'min-h-24' : 'h-14'
+          }`}
           placeholderTextColor="#A0A0A8"
           secureTextEntry={isPassword ? isHidden : secureTextEntry}
           onFocus={(e) => {

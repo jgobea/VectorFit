@@ -26,6 +26,7 @@ export interface UserProfile {
   ai_voice_volume: number;
   language_preference: string;
   ai_coaching_style: 'motivational' | 'technical' | 'balanced';
+  onboarding_completed: boolean;
   created_at: string;
   updated_at: string;
 }

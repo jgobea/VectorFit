@@ -23,12 +23,30 @@ export default function ChatScreen() {
   }, [messages]);
 
   return (
-    <SafeAreaView className="flex-1 bg-background-light dark:bg-background" edges={['top', 'bottom']}>
+    // 'bottom' dropped from edges: the Tabs bar below this screen already
+    // covers the bottom safe-area inset — adding it here double-pads.
+    <SafeAreaView className="flex-1 bg-background-light dark:bg-background" edges={['top']}>
       <ChatHeader />
 
+      {/*
+        Two stacked bugs here, both real:
+        1. NativeWind doesn't register KeyboardAvoidingView for className/
+           cssInterop support (same gotcha as Animated.View elsewhere in
+           this project) — `className="flex-1"` was a silent no-op, so this
+           view never actually stretched to fill the screen. Fixed with
+           `style`.
+        2. `behavior={undefined}` on Android used to be correct (rely on
+           `windowSoftInputMode="adjustResize"` to resize the window
+           natively) but Expo SDK 54 turns Android edge-to-edge ON by
+           default, which breaks that native resize — the keyboard now
+           just overlays the screen with nothing shifting, hiding
+           ChatInput completely rather than merely mis-sizing it. 'height'
+           behavior sidesteps this: it measures the keyboard via JS events
+           and shrinks itself directly, independent of window resize.
+      */}
       <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
       >
         <View className="flex-1">

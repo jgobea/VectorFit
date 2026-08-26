@@ -30,10 +30,12 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background-light dark:bg-background" edges={['top', 'bottom']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        className="flex-1"
-      >
+      {/* className is a no-op on KeyboardAvoidingView — NativeWind doesn't
+          register it for cssInterop. 'height' (not undefined) on Android:
+          SDK 54's default edge-to-edge breaks windowSoftInputMode=resize,
+          so Android needs its own explicit avoidance too — see chat.tsx
+          for the full note. */}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView
           contentContainerClassName="flex-grow justify-center px-6"
           keyboardShouldPersistTaps="handled"

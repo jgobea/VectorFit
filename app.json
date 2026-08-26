@@ -11,7 +11,8 @@
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.vectorfit.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "Camera access is needed for pose estimation"
+        "NSCameraUsageDescription": "Camera access is needed for pose estimation",
+        "NSPhotoLibraryUsageDescription": "Photo library access is needed to set your profile picture"
       }
     },
     "android": {
@@ -39,6 +40,13 @@
         }
       ],
       "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow VectorFit to access your photos to set your profile picture.",
+          "cameraPermission": "Allow VectorFit to access your camera to take a profile picture."
+        }
+      ],
       [
         "expo-build-properties",
         {

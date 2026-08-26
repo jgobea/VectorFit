@@ -392,6 +392,11 @@ deno_version = 2
 [functions.chat]
 verify_jwt = false
 
+# Same CORS-preflight reasoning as functions.chat — auth is verified
+# manually inside supabase/functions/delete-account/index.ts.
+[functions.delete-account]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

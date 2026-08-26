@@ -14,7 +14,9 @@ export default function DashboardScreen() {
     useDashboard();
 
   return (
-    <SafeAreaView className="flex-1 bg-background-light dark:bg-background" edges={['top', 'bottom']}>
+    // 'bottom' dropped from edges: the Tabs bar below this screen already
+    // covers the bottom safe-area inset — adding it here double-pads.
+    <SafeAreaView className="flex-1 bg-background-light dark:bg-background" edges={['top']}>
       <DashboardHeader greeting={greeting} />
 
       <ScrollView

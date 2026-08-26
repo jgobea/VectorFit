@@ -10,6 +10,14 @@ interface UiState {
   theme: ThemePreference;
   hasHydrated: boolean;
   setTheme: (theme: ThemePreference) => void;
+  /**
+   * True only while an actual Live Review camera session (workout/resting/
+   * summary) is on screen — not during its pre-session setup form. Lets
+   * app/(app)/_layout.tsx hide the bottom tab bar for full-screen immersion
+   * without ever hiding it while the setup screen still needs a way out.
+   */
+  isLiveReviewActive: boolean;
+  setLiveReviewActive: (isLiveReviewActive: boolean) => void;
 }
 
 // NativeWind's darkMode:'class' is a manual switch by design (that's the
@@ -38,10 +46,16 @@ export const useUiStore = create<UiState>()(
         applyTheme(theme);
         set({ theme });
       },
+      isLiveReviewActive: false,
+      setLiveReviewActive: (isLiveReviewActive) => set({ isLiveReviewActive }),
     }),
     {
       name: 'vectorfit-ui',
       storage: createJSONStorage(() => AsyncStorage),
+      // Only theme should survive an app restart — isLiveReviewActive is
+      // live session state, not a preference, and would wrongly hide the
+      // tab bar forever if the app were killed mid-session.
+      partialize: (state) => ({ theme: state.theme }),
       onRehydrateStorage: () => (state) => {
         if (state) applyTheme(state.theme);
         useUiStore.setState({ hasHydrated: true });

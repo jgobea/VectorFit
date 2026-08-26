@@ -40,12 +40,12 @@ export function Button({ label, variant = 'primary', loading, disabled, ...press
   }
 
   return (
-    <Pressable {...commonA11y} {...pressableProps} className="active:opacity-80 disabled:opacity-40">
+    <Pressable {...commonA11y} {...pressableProps} className="h-14 active:opacity-80 disabled:opacity-40">
       <LinearGradient
         colors={GradientPrimary}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
-        style={{ height: 56, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
+        style={{ width: '100%', height: '100%', borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
       >
         {loading ? (
           <ActivityIndicator color="#1C1C1E" />
