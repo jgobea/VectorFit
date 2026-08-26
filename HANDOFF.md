@@ -1,332 +1,306 @@
 # VectorFit — Handoff
 
-**Written:** 2026-08-25. **For:** a fresh Claude Code session continuing this
+**Written:** 2026-08-26. **For:** a fresh Claude Code session continuing this
 build.
 **Read first:** `INSTRUCTIONS.md` (build workflow, stack, rules) and
 `DESIGN_SPEC.md` (the design source of truth) at the project root — still on
-disk, gitignored (see prior handoff entries), don't re-derive their contents
-here.
+disk, gitignored, don't re-derive their contents here.
 
 ## Where things stand
 
 Git: on branch **`chore/expo-sdk-54`** (off `master`), pushed to the
-`github` remote. Working tree clean after this session's commits (see log
-for exact SHAs — not repeated here, `git log` is authoritative). **Still not
-merged to `master`** — same reasoning as before: this branch also carries
-the SDK 54 downgrade from an earlier session, and Live Review (this
-session's main work) hasn't had a design self-review pass or explicit user
-approval yet, even though it's functionally confirmed working. Ask the user
-before merging.
+`github` remote. **Still not merged to `master`** — ask the user before
+merging; it's been the natural point to raise this for a few sessions now
+and hasn't happened yet.
 
-**Setup phase, Login, Dashboard, Trainer AI Chat:** unchanged structurally
-this session — Chat got bug fixes only (see below), not a rebuild.
+All 5 of `INSTRUCTIONS.md`'s original pages (Login, Dashboard, Trainer AI
+Chat, Trainer AI Live Review, User Info) are built and confirmed. Since
+then the app has grown well past that original scope on direct user
+request — routines, onboarding, custom exercises — none of which
+`DESIGN_SPEC.md` describes; treat user instructions as authoritative over
+the spec for anything built after User Info. **Everything described below
+is confirmed working by the user and safe to build on.**
 
-## What changed this session: Trainer AI Chat fixes, then Trainer AI Live Review built
+Two commits since the last handoff, both approved:
+- `7fcf359` — User Info page, first-login onboarding wizard, persistent
+  bottom tab bar, two Android keyboard-avoidance bugs, small UI polish.
+- `a43ebda` — the whole routines feature: builder, Today's Workout
+  redesign, custom exercises, finish-day flow, stats overhaul.
 
-### Trainer AI Chat — three bug fixes, already deployed live
+Read those two commit messages for the full file-level "what" — this doc
+focuses on the "why" and the non-obvious gotchas, per this project's
+`handoff` skill guidance not to duplicate what's already in the diff.
 
-1. **Streaming was silently broken on native** (worked on web). RN's global
-   `fetch` doesn't expose a real `ReadableStream` on `response.body` on
-   native — `lib/gemini.ts` was throwing `Chat request failed with status
-   200` (i.e. the request succeeded but `response.body` was falsy). Fixed
-   by importing `fetch` from `expo/fetch` instead of the RN global — it's
-   Expo's WinterCG-compliant fetch, which does support streaming on native.
-   Confirmed via `https://docs.expo.dev/versions/v54.0.0/sdk/expo/`
-   (AGENTS.md requires reading versioned SDK docs before writing code).
-2. **Intermittent 502s** turned out to be Gemini itself returning `503
-   Service Unavailable — high demand` for `gemini-flash-latest`. Diagnosed
-   by pulling real Supabase Edge Function logs via the Management API (see
-   Environment quirks below for the query pattern) — the function's own
-   `console.error` had the actual Gemini error, which a plain "status 502"
-   report from the client never showed. Added `supabase/functions/chat/retry.ts`
-   (`withRetry`, 3 attempts, short backoff) — helps but doesn't fully absorb
-   sustained demand spikes.
-3. **Switched model** `gemini-flash-latest` → `gemini-flash-lite-latest`
-   (still an alias, not a dated snapshot — same rationale as the existing
-   code comment). The user found via Google AI Studio that flash-lite has a
-   much higher free-tier daily request quota than flash, which was close to
-   exhausting. Verified the model exists via Gemini's `ListModels` API
-   before using it — never guessed.
+## Persistent bottom tab bar
 
-All three deployed via `supabase functions deploy chat --project-ref
-wyfxwvdzqnylevwypony` — each deploy needs the user's explicit go-ahead (the
-auto-mode classifier blocks it outright) and a fresh `SUPABASE_ACCESS_TOKEN`
-if you don't already have one in the conversation.
+`app/(app)/_layout.tsx` is now `<Tabs>` (was `<Stack>`): Dashboard / Chat /
+Live Review / Profile, always visible except during an active Live Review
+camera session (`stores/uiStore.ts`'s `isLiveReviewActive`, set only once
+`config !== null` in `live-review.tsx` — **not** during the setup screen,
+which needs the tab bar as its only way out since it has no back/cancel
+button of its own).
 
-### Trainer AI Live Review — built, two real bugs found and fixed, one known unfixable limitation remains
+## First-login onboarding wizard
 
-Read `DESIGN_SPEC.md` §D and the QuickPose docs
-(`https://docs.quickpose.ai/docs/MobileSDK/...`) before touching any of
-this — same as always. The 18-exercise Exercises doc 404s on WebFetch; the
-user keeps a working link list — ask them for it if you need it again
-(their `links.txt` at the project root, gitignored, not something you can
-regenerate from a public URL).
+`app/onboarding.tsx` — top-level route (outside both `(auth)` and `(app)`,
+same reasoning as `routine-builder.tsx` below: full-screen flow, no tab
+bar). Gated by `app/(app)/_layout.tsx` checking `users.onboarding_completed`
+via `hooks/useOnboardingGate.ts`, redirecting to `/onboarding` if false.
+Four steps (About You / Body / Goals / Coaching Style), dot pagination,
+arrow nav, Next disabled until the current step's required fields are
+filled (`isStepComplete` in `app/onboarding.tsx`), Skip triggers a
+`ConfirmModal`-style warning about losing AI personalization rather than
+silently skipping. Field option lists live in
+`constants/profileOptions.ts`, shared with the Profile page so the two
+can't drift.
 
-**What was built**, deliberately expanded past `DESIGN_SPEC.md`'s literal
-description per explicit user request (a giant single-screen exercise list
-wasn't "friendly"):
+**Email confirmation is currently disabled on the live Supabase project**
+(`mailer_autoconfirm: true`, set via the Management API's
+`/config/auth` endpoint, explicit user request after hitting
+`email rate limit exceeded` while repeatedly testing signup/delete
+cycles). This means **anyone can sign up with a fake/unverified email
+right now**. Revisit before any real/production use — the user was told
+this tradeoff explicitly and accepted it "for now." No custom SMTP is
+configured either (`smtp_host: null`), which is *why* confirmation emails
+were hitting Supabase's shared-mailer rate limit (2/hour) in the first
+place — if confirmation ever gets re-enabled without also adding custom
+SMTP, expect the same rate-limit issue to resurface immediately during
+testing.
 
-- `app/(app)/live-review.tsx` — thin shell: physical-device gate, then
-  `LiveReviewSetup` (no config chosen) or `LiveReviewWorkout` (config
-  chosen).
-- `components/features/live-review/LiveReviewSetup.tsx` — exercise picked
-  via a dropdown-style modal (`ExercisePickerModal.tsx`, backed by
-  `hooks/useExerciseCatalog.ts`), reps/sets/rest picked via button chips
-  (`OptionButtonRow.tsx`) — no free-text input anywhere, per the user's
-  explicit ask.
-- `components/features/live-review/LiveReviewWorkout.native.tsx` /
-  `.web.tsx` — the actual multi-set workout: session → rest → next set →
-  ... → summary. `hooks/usePoseSession.ts` owns the QuickPose result stream
-  and per-set tallies for the whole workout. `targetReps` is a threshold
-  that surfaces a "Finish Set" button, not a hard cap — reps keep counting
-  past it (explicit user request, for training to failure).
-- `supabase/migrations/20260818210000_seed_exercises.sql` — seeded 18
-  QuickPose-supported exercises into the (previously-empty)
-  `exercises` table, since the Live Review picker needs real rows to show.
-  Applied directly via the Management API (same pattern as always — see
-  Environment quirks) and backfilled into
-  `supabase_migrations.schema_migrations` by hand. `overarmReachBilateral`
-  deliberately excluded — QuickPose's own docs mark it iOS-only.
-- The `.native.tsx`/`.web.tsx` split exists because
-  `@quickpose/react-native`'s native view uses `codegenNativeComponent`,
-  which crashes Metro's **web** bundle at import time (not just at
-  runtime) — any file that imports anything from that package, even just
-  `QuickPoseThresholdCounter`, pulls in the same broken import
-  transitively, since it's all one module entry point. Only `import type`
-  (fully erased) is safe on the web side. Added
-  `"moduleSuffixes": [".ios", ".android", ".native", ".web", ""]` to
-  `tsconfig.json` so `tsc` resolves these the same way Metro does (wasn't
-  needed before this — first cross-platform split in the project). ESLint's
-  import resolver still doesn't know about it — there's an
-  `eslint-disable-next-line import/no-unresolved` on the one cross-boundary
-  import in `live-review.tsx`, don't remove it.
+## Chat personalization
 
-**Bug #1 — wrong package name.** `app.json`'s `android.package` was still
-Expo's auto-generated `com.anonymous.VectorFit` placeholder (nobody had set
-it before this session — Chat/Dashboard/Login never needed a real native
-identity since they ran fine in Expo Go). The user's QuickPose SDK key is
-registered to `com.vectorfit.app` specifically. Mismatch caused the SDK to
-initialize locally (camera + skeleton overlay worked for ~1s) then fail an
-async license check with "SDK key invalid" rendered right into the
-feedback-text overlay. Fixed by setting `android.package` and
-`ios.bundleIdentifier` to `com.vectorfit.app` in `app.json` — **but this
-requires `npx expo prebuild --clean` to regenerate the native `android/`
-folder**, not just a rebuild; `expo run:android` alone does NOT re-read
-`app.json` once `android/` already exists on disk. Learned this the hard
-way — if `app.json`'s native-identity fields ever change again, prebuild
-first.
+`supabase/functions/chat/index.ts` now fetches the caller's `public.users`
+row (via the request's own auth-scoped client, RLS-protected, not the
+service role) and appends a "here's what you know about this user" block
+to the Gemini system instruction — only the fields they've actually filled
+in, explicitly told not to recite the list back verbatim. Deployed live.
+If the prompt ever needs tuning, `buildProfileContext()` is the one
+function to touch.
 
-**Bug #2 — real native crash, not the ANR it looked like at first.**
-Tapping "Finish Set" or "Stop Session" after doing actual reps crashed the
-app (`SIGABRT`, `JNI DETECTED ERROR ... GetObjectClass called with pending
-exception org.json.JSONException: Forbidden numeric value: NaN`). Root
-cause, found via `adb logcat -b crash`: QuickPose's own
-`QuickPoseViewManager.kt` (line ~199, shipped as source in
-`node_modules/@quickpose/react-native/android/...`, not a compiled AAR —
-patchable) calls `org.json.JSONObject.put(key, result.value.toDouble())`
-without checking for `NaN`. QuickPose's pose math legitimately produces
-`NaN` for a frame sometimes (an indeterminate angle mid-movement) — more
-reps done live means more chance of hitting one. `org.json` throws on
-NaN/Infinite by spec, and that exception surfaces inside a native JNI
-callback (`mediapipe::android::Graph::CallbackToJava`) that doesn't clear
-it before further JNI calls, aborting the whole process. **Patched** via
-`patch-package` (`patches/@quickpose+react-native+0.6.1.patch`,
-`postinstall: patch-package` added to `package.json`) to skip non-finite
-values instead of crashing. This is a real upstream QuickPose bug, not an
-app bug — worth filing with them (`npx patch-package @quickpose/react-native
---create-issue` was offered but not run). **Re-apply note:** since this
-patches a *source* file that Gradle compiles locally (not a prebuilt
-binary), any `npm install` that reinstalls the package needs `postinstall`
-to actually run — if you ever see the crash again, check the patch applied
-(`node_modules/@quickpose/react-native/android/.../QuickPoseViewManager.kt`
-around line 199 should have an `isFinite()` guard) before re-diagnosing
-from scratch.
+## Routines — the big feature this session
 
-**Bug #3 — the "unfixable" freeze on exit, fixed anyway.** The prior
-version of this handoff described `onViewDetachedFromWindow` /
-`onDropViewInstance` both calling `quickPose.stop()` synchronously on the
-UI thread (blocking on a native `Graph.nativeWaitUntilGraphDone()` wait,
-5+ seconds, ANR territory) as an unavoidable QuickPose limitation — the
-call itself is compiled into `quickpose-core`/`quickpose-mp`, not
-patchable. That's still true, but the user pushed on it: the *thread*
-`stop()` runs on is decided by the patchable bridge file, not by
-`stop()` itself. Patched `QuickPoseViewManager.kt` to fire `stop()` on a
-plain background `Thread` instead of inline. First attempt crashed the
-whole app immediately — `onViewDetachedFromWindow` and `onDropViewInstance`
-both call `.stop()`, and once backgrounded the two calls can race: the
-second one hits a graph whose native context the first already tore down
-(`IllegalStateException: Invalid context, tearDown() might have been
-called`), thrown on a bare `Thread` with no handler, which is fatal for
-the whole process. Fixed with a `hasStopped` guard (see
-`stopQuickPoseAsync()` in the patch) so `stop()` only ever fires once per
-camera session, wrapped in `try/catch` so nothing on that background
-thread can take the process down again. **Confirmed working** — full
-multi-set workout including "Save Session" exit, no freeze, no crash.
+Users can now build a real weekly routine instead of the dashboard always
+being empty. This is a full vertical slice: schema, builder UI, Today's
+Workout integration, and a day-completion/stats loop.
 
-### Setup screen reworked per explicit user request (past what DESIGN_SPEC.md describes)
+### Data model
 
-Once the crash/freeze issues above were fixed and confirmed, the user asked
-for a friendlier pre-workout config screen — this is scope DESIGN_SPEC.md
-doesn't cover at all, added on direct request, not invented independently:
+**One routine per user** (`routines.user_id` is `unique`, not a list —
+deliberate simplification, confirmed with the user rather than building
+multi-routine management). `routine_days` always has exactly 7 rows per
+routine (created alongside it, `day_of_week` 0–6 matching JS
+`Date#getDay()`), so day toggles are always an `update`, never an
+insert/delete. `routine_exercises` stores **aggregate** sets/reps/weight/
+rest per exercise (one row, not one row per set) — also a deliberate
+simplification the user confirmed over the alternative (individual
+set-rows with warmup/drop types), to avoid a much heavier grid UI for v1.
 
-- Exercise picker is now a bottom-sheet dropdown
-  (`components/features/live-review/ExercisePickerModal.tsx`) grouped by
-  body area, instead of a full-page list. Groups come from `Exercise.category`
-  — seeded via `supabase/migrations/20260825140000_categorize_exercises.sql`
-  (Upper Body / Lower Body / Core / Full Body, standard fitness taxonomy,
-  not QuickPose-specific — applied directly, same Management API pattern as
-  every other migration this project uses).
-- `components/features/live-review/NumberStepperField.tsx` — reps/sets are
-  now +/- buttons around an integer-only text input (digits stripped via
-  regex on every keystroke), not button chips.
-- `components/features/live-review/RestSlider.tsx` — rest between sets is
-  a `@react-native-community/slider` (new native dependency) in 15s steps,
-  label switches to a minutes format past 60s.
-- `LiveReviewSetup.tsx` now wraps the whole form in one centered `Card`
-  instead of a full-height scroll list.
-- `onExit` (Save Session) now does `router.replace('/(app)/dashboard')`
-  instead of returning to the Live Review setup screen.
+Migrations, in order: `20260826000000_routines.sql` (core 3 tables),
+`20260826120000_routine_exercise_extras.sql` (`icon` column +
+`routine_exercise_completions`, dated per-day so a recurring Monday can be
+checked off independently each week), `20260827090000_seed_non_quickpose_exercises.sql`
+(14 gym exercises with no QuickPose feature — see below for why this
+existed at all), `20260827100000_user_custom_exercises.sql`
+(`exercises.created_by` + RLS rework), `20260827110000_routine_exercises_sets_positive.sql`
+(`check (sets is null or sets > 0)`), `20260827130000_routine_day_completions.sql`
+(whole-day completion, distinct from the per-exercise table). All applied
+directly via the Management API and backfilled into
+`supabase_migrations.schema_migrations`, same pattern as every prior
+migration in this project.
 
-**Two rendering bugs found and fixed during this pass** — worth knowing
-about if similar symptoms show up elsewhere in the app:
-- `TextInput` digits were visually clipped at the top on Android inside a
-  fixed-height box. `text-center` (NativeWind) only affects horizontal
-  alignment — needed an explicit `style={{ textAlignVertical: 'center',
-  paddingVertical: 0 }}` to override Android's built-in vertical padding.
-- The exercise picker sheet cut off abruptly partway down instead of
-  reaching its intended height. A NativeWind `max-h-[70%]` on a `View`
-  nested inside two `Pressable`s didn't reliably resolve — RN's
-  percentage-height resolution through a non-trivial ancestor chain is
-  flaky on Android. Replaced with a pixel value computed from
-  `Dimensions.get('window').height * 0.7`. If a percentage-based height
-  class ever looks wrong again, suspect this same class of bug first.
+**The old `workouts` / `workout_exercises` tables are now dead** — they
+modeled a single dated workout (`scheduled_date`), never actually got
+populated by any UI, and are fully superseded by `routines`. Left in place
+(not dropped) since `workout_sessions.workout_id` still references
+`workouts`, but nothing in the app writes to either any more. If you're
+ever tempted to build something workout-scheduling-related, check
+`routines` first — it's almost certainly what you want, not `workouts`.
 
-Adding the slider (a genuinely new native module, unlike the JS-only
-tweaks earlier this session) needed `npx expo prebuild --clean` before
-`expo run:android` — the first build attempt failed with a Fabric codegen
-error (`Props.h` file not found) because the existing `android/` folder
-predated the dependency and didn't know to generate its codegen artifacts.
-Same lesson as the package-name bug from earlier: any new native
-dependency or `app.json` native-identity change needs a fresh prebuild,
-not just a rebuild.
+### Custom exercises — a real correction mid-session
 
-### Web preview — broken, cause not found, likely environment-specific
+First pass seeded 14 non-QuickPose exercises (Bench Press, Deadlift, etc.)
+as the only way to add a non-camera exercise to a routine. **The user
+pushed back on this directly** — a fixed admin-seeded list isn't user
+freedom, even if it technically has non-camera options. Fixed by adding
+`exercises.created_by` (nullable — null means shared/seeded, non-null
+means a specific user's own): RLS now scopes `select` to
+`created_by is null or created_by = auth.uid()`, `insert` requires
+`created_by = auth.uid() and quickpose_feature is null` (nobody but this
+app's own QuickPose integration can verify a real `fitness.*` string, so a
+user-created exercise can never claim camera compatibility — enforced at
+the RLS level, not just client-side). The picker
+(`components/features/ExercisePickerModal.tsx`, moved from
+`live-review/` since it's shared now) has an inline "Add your own
+exercise" row and shows a "Live Review" badge on compatible exercises,
+sorted to the top of each category group — that badge is the actual
+mechanism for **identifying** camera-compatible exercises now, not a
+separate fixed list. **If a future request implies "the exercise catalog
+is fixed/admin-only," push back the same way** — this app's whole point is
+user-customizable routines.
 
-`localhost:8081` in the browser (tested in normal window AND incognito, on
-the same machine running Metro) shows a blank white page with **zero**
-console output and a Network-tab request to `entry.bundle?platform=web...`
-that never gets a status. Meanwhile the exact same URL via `curl` from this
-session's shell consistently returns `200` in ~1.5s. Restarting Metro
-didn't fix it either. Strong suspicion: the user's VPN intercepting
-browser-originated `localhost` traffic specifically (browser
-extension/proxy layer, independent of the OS routing table — which showed
-LAN traffic correctly bypassing the VPN tunnel when checked). **Not
-resolved.** Next session: try a different browser, check the VPN client for
-a "bypass localhost" setting, or test with the VPN fully off if the user
-can. This is very unlikely to be a code issue — Android and web bundles
-both compiled clean every time this was checked.
+### Today's Workout — no more single Start Workout button
 
-## Next up
+Each exercise acts independently now:
+- **Live-Review-compatible** (`exercise.quickpose_feature` set): a camera
+  button that deep-links into `/(app)/live-review` with `exerciseId`,
+  `routineExerciseId`, `reps`, `sets`, `restSeconds` as route params.
+  `LiveReviewSetup.tsx` reads these via a `prefill` prop and auto-selects
+  the matching exercise once its catalog loads. **Also** gets the same
+  manual check button as everything else (the user explicitly asked for
+  both — camera exercises aren't only completable via the camera).
+- **Everything else**: a manual check toggle, backed by
+  `routine_exercise_completions` (dated, per exercise, per day —
+  `hooks/useTodayCompletions.ts`).
+- Finishing (or stopping) a Live Review session for a routine exercise
+  **automatically** checks it too — `usePoseSession.ts`'s `finishWorkout`
+  upserts a completion row when `config.routineExerciseId` is set. This is
+  the one place both paths (manual check, camera finish) converge on the
+  same table.
 
-Per `INSTRUCTIONS.md`'s page order, Live Review is page #4. Functionally
-confirmed working end-to-end this session (full multi-set workout, no
-crashes, no freezes) — **still not formally "approved" per
-`INSTRUCTIONS.md`'s workflow** (no design self-review pass done yet, see
-Suggested skills). After that:
+Once every exercise for the day is checked, a **Finish Day** button
+(always visible, disabled until then) opens `FinishDayModal` — confirm the
+exercise list, and it writes `routine_day_completions` (one row per user
+per day, snapshotting `exercise_count` + `total_load_kg`), fires
+`components/ui/ConfettiBurst.tsx` (pure `react-native` `Animated`, no new
+native dependency — deliberate, to avoid another prebuild cycle), and
+swaps the button for a "Day Complete!" badge.
 
-1. Get explicit approval on Live Review from the user before treating it as
-   done — `INSTRUCTIONS.md`'s workflow requires this before moving on.
-2. Resolve or shelve the web-preview issue — ask the user if it's blocking
-   or if they're fine testing exclusively via the Android dev client for
-   now.
-3. Then: User Info page (page #5, last one in `INSTRUCTIONS.md`'s order).
-4. Revisit the `chore/expo-sdk-54` → `master` merge decision — still
-   pending, still needs the user's explicit call per earlier handoffs.
+**Dashboard stats got a real fix, not just a new feature.**
+`useDashboardStats.ts` used to compute `workoutsThisWeek` and streak from
+`workout_sessions` — a table nothing in the app has ever written to, so
+those numbers were silently always 0. Both now read from
+`routine_day_completions`, which is real. "Calories burned" (also never
+actually computed — the schema has no calorie-estimation logic anywhere)
+is replaced with **today's load volume** (`lib/routineLoad.ts`:
+`sum(sets × reps × weight_kg)` over today's *completed* exercises) — a
+number this app can actually calculate honestly from data it already
+tracks. If you see "calories" mentioned anywhere else in the app (there
+shouldn't be), that's a leftover to clean up.
+
+### Routine builder (`app/routine-builder.tsx`)
+
+Top-level route (outside `(app)`, same reasoning as onboarding: full
+screen, no tab bar), reached from the Dashboard's empty state, the
+"Today's Workout" edit pencil, or Quick Access's "Edit Routine" tile —
+`useRoutine({ createIfMissing: true })` creates one on the fly if the user
+doesn't have one yet. `stores/routineStore.ts` is the single source of
+truth both this screen and the Dashboard read/write, so builder edits show
+up on the Dashboard on navigating back without a manual refetch (Dashboard
+also has a belt-and-suspenders `useFocusEffect` refetch, since it's a
+`Tabs` screen that stays mounted).
+
+Field edits (rest/training toggle, notes, sets/reps/weight/rest, icon)
+autosave immediately per-field — the sticky "Save Routine" button in the
+header is really just "I'm done, go back," not a batch-save, per the
+user's own description of the flow.
+
+**No drag-and-drop reorder** — up/down chevron buttons on each exercise
+card instead. The user's original spec asked for drag-and-drop; this was a
+deliberate simplification to avoid adding a new native dependency
+mid-feature. Revisit if the user asks for real dragging later.
+
+**Custom exercise icons**: `constants/exerciseIcons.ts` is a curated list
+of 10 Feather glyph names (no literal "dumbbell" exists in Feather) —
+`routine_exercises.icon` stores the chosen one, falls back to `activity`
+if unset or invalid. `ExerciseIconPickerModal.tsx` is the picker.
 
 ## Decisions carried forward from earlier sessions (still true)
 
-- **NativeWind + Reanimated footgun:** `Animated.View` isn't registered
-  with NativeWind's `cssInterop`, so `className` on it is silently a
-  no-op. Layout classes go on a plain `View` nested inside it; only
-  `entering`/`exiting`/`style` go on the `Animated.View` itself.
-- **react-native-web `ScrollView` defaults to `flexGrow: 1`.** Any
+- **NativeWind `className`-no-op footgun** — `Animated.View` and
+  `KeyboardAvoidingView` are the two known cases in this codebase.
+  `className` silently does nothing on either; layout classes go on a
+  plain nested `View`/child, `style` (and `entering`/`exiting` for
+  `Animated.View`) on the component itself. If a screen looks wrong only
+  in ways that suggest a missing `flex: 1`, check for this before
+  debugging anything else.
+- **Android keyboard avoidance needs explicit `behavior={Platform.OS ===
+  'ios' ? 'padding' : 'height'}`**, never `undefined` for Android — SDK
+  54's edge-to-edge default breaks the classic
+  `windowSoftInputMode="adjustResize"` native-resize idiom. This is now
+  the standard pattern across every screen with a `KeyboardAvoidingView`
+  in this project (`chat.tsx`, all three `(auth)` screens,
+  `onboarding.tsx`'s `OnboardingStepFrame`, `routine-builder.tsx`).
+- **`react-native-web` `ScrollView` defaults to `flexGrow: 1`** — any
   horizontal `ScrollView` inside a flex column on web needs explicit
   `grow-0 shrink-0` (+ ideally `max-h-*`) or it silently expands.
 - **No third-party Markdown library** — hand-rolled in `lib/markdown.ts` +
   `components/ui/Markdown.tsx`, only wired into assistant chat bubbles.
 - **Expo Go cannot run Live Review at all** — `@quickpose/react-native`
-  ships real native code (not a config plugin), so it's not in the Expo Go
-  binary. A custom dev client (`expo run:android` / `expo run:ios` /
-  EAS Build) is required for this page specifically. Login/Dashboard/Chat
-  still work fine in Expo Go if that's ever useful again.
+  ships real native code, not in the Expo Go binary. A custom dev client
+  is required for that page specifically; everything else still works in
+  Expo Go.
+- **Any new native dependency or `app.json` native-identity change needs
+  `npx expo prebuild --clean` before `expo run:android`**, not just a
+  rebuild — learned the hard way twice (QuickPose SDK key mismatch,
+  `@react-native-community/slider`, `expo-image-picker`). This session's
+  routines feature was pure JS + migrations, no native changes, so it
+  hot-reloaded without a prebuild.
 
 ## Environment quirks (so you don't re-debug them)
 
 - **Windows doesn't reliably kill the whole `expo start` process tree** —
-  same as before, check `Get-NetTCPConnection -LocalPort 8081 -State
-  Listen` → `Stop-Process -Id <pid> -Force` if port 8081 is stuck.
-- **adb wireless pairing failed repeatedly this session** (`error: protocol
-  fault (couldn't read status message): No error`), even with fresh codes
-  and an adb server restart — the user has an always-on VPN, plausibly the
-  same browser/localhost interception behavior as the web issue above,
-  though this was over LAN with a real IP, not localhost, so it might be a
-  separate VPN quirk. **USB cable worked fine** — use that, don't burn time
-  on wireless pairing with this VPN active. If USB install fails with
-  `INSTALL_FAILED_USER_RESTRICTED`, check the phone (Xiaomi/MIUI) for
-  Developer Options → **"Install via USB"** — a separate toggle from USB
-  debugging, MIUI-specific, easy to miss.
-- **`adb reverse tcp:8081 tcp:8081` drops on USB re-enumeration** (cable
-  wiggle, phone screen lock/unlock cycles, etc.) — if the app shows
-  "Unable to load script" / "Cannot connect to Metro", re-run the reverse
-  command before assuming something's actually broken. **Better fix**:
-  just re-run `npx expo run:android` — it connects over the phone's LAN IP
-  by default (`vectorfit://expo-development-client/?url=http://<LAN-IP>:8081`),
-  which doesn't depend on the USB reverse tunnel at all and survived
-  reconnects that broke the manual `adb reverse` approach.
-- **Reading real Supabase Edge Function logs** (not just client-side status
-  codes) needs the Management API's Logflare-backed query endpoint, not the
-  `database/query` one used for SQL:
+  check `Get-NetTCPConnection -LocalPort 8081 -State Listen` →
+  `Stop-Process -Id <pid> -Force` if port 8081 is stuck.
+- **`adb reverse tcp:8081 tcp:8081` drops on USB re-enumeration** — re-run
+  `npx expo run:android` rather than fighting the manual reverse tunnel;
+  it connects over the phone's LAN IP by default and survives reconnects
+  the tunnel doesn't.
+- **Reading real Supabase Edge Function logs** needs the Management API's
+  Logflare endpoint, not `database/query`:
   ```
   POST https://api.supabase.com/v1/projects/{ref}/analytics/endpoints/logs.all
   Authorization: Bearer $SUPABASE_ACCESS_TOKEN
   body: {"sql": "select timestamp, event_message from function_logs order by timestamp desc limit 40",
          "iso_timestamp_start": "<ISO>", "iso_timestamp_end": "<ISO>"}
   ```
-  Table names: `function_edge_logs` for request/status lines, `function_logs`
-  for the function's own `console.*` output. **Must pass an explicit
-  timestamp range** — omitting it silently returns an empty result, not an
-  error, which looks identical to "no logs exist."
-- **`patch-package` chokes on Gradle build artifacts inside
-  `node_modules/`** if a native module's source got compiled locally
-  (`android/build/` inside the package) — `git add` fails with "Filename
-  too long" on Windows before the patch is even generated. Delete that
-  `android/build/` directory (it's disposable, regenerated on next Gradle
-  run) before running `npx patch-package <name>`, don't just add
-  `--exclude`, which didn't reliably dodge it in this session.
+  `function_edge_logs` for request/status lines, `function_logs` for the
+  function's own `console.*` output. **Must pass an explicit timestamp
+  range** — omitting it silently returns empty, not an error.
+- **`python3` resolves to a broken Windows Store stub** in this
+  environment — use `node -e "..."` one-liners to build JSON payloads for
+  Management API calls instead (used throughout this session for every
+  migration deploy).
 - **`.env` has real, working project credentials** — don't ask again.
-  `SUPABASE_ACCESS_TOKEN` still isn't in there — separate personal
-  credential, ask again if needed (a token from earlier this session may
-  still be live, but don't assume — ask fresh rather than guessing an old
-  value).
+  `SUPABASE_ACCESS_TOKEN` isn't in there — separate personal credential,
+  ask fresh each session rather than assuming an old one from
+  conversation history is still live.
 - **User verifies pages themselves** via the running dev server, not a
-  headless-screenshot report — unchanged from before. Also: **don't take
-  screenshots yourself** (no `playwright`/`claude-in-chrome` for viewing
-  this app's UI) — the user pastes screenshots when something needs to be
-  seen. Reading logs (adb logcat, browser console/network — as text, not
-  screenshotted) is fine and expected; it's specifically app-UI
-  screenshots that are off-limits.
-- **UIZZE's `ui-radar` is still blocked** (403 from `WebFetch`) — same as
-  every prior session, don't retry it.
+  headless-screenshot report. **Don't take screenshots yourself** — the
+  user pastes them when something needs to be seen. Reading logs (adb
+  logcat, console/network as text) is fine; app-UI screenshots are
+  specifically off-limits.
+- **UIZZE's `ui-radar` is still blocked** (403 from `WebFetch`) — don't
+  retry it.
+
+## Next up
+
+1. **Merge decision**: `chore/expo-sdk-54` → `master` — raise it with the
+   user, it's been pending for a while and the app has grown a lot on this
+   branch since the SDK downgrade that started it.
+2. **Email confirmation is off in production right now** — decide with the
+   user whether/when to re-enable it plus configure custom SMTP, per the
+   note above. Don't just flip it back on without SMTP — the rate-limit
+   issue that caused it to be disabled will resurface immediately.
+3. **Weight-history graph** (`DESIGN_SPEC.md` §E.2) still not built — the
+   schema only stores current `weight_kg` + `weight_updated_at`, no time
+   series. Flagged, not scheduled.
+4. **Language preference field doesn't do anything yet** — it's a Profile
+   field but the `chat` edge function's system prompt build doesn't read
+   it. Real gap if the user expects it to work.
+5. Consider whether the "no drag-and-drop reorder" simplification in the
+   routine builder needs revisiting — flagged above, not requested yet.
 
 ## Suggested skills for the next session
 
-- `ui-slop-score` / `anti-ui-slop` — self-score and fix Live Review's new
-  screens (Setup, RestTimer, SessionSummaryModal) before calling the page
-  done — this session prioritized getting it *working* over a design
-  self-review pass.
-- `supabase` — re-check the security checklist now that `pose_sessions`
-  writes are live (Live Review's `usePoseSession.ts` inserts on every
-  finished workout).
+- `supabase` — re-check the security checklist given how many new
+  tables/RLS policies landed this session (`routines`, `routine_days`,
+  `routine_exercises`, `routine_exercise_completions`,
+  `routine_day_completions`, plus the `exercises.created_by` RLS rework).
+- `ui-slop-score` / `anti-ui-slop` — self-score the routine builder
+  specifically; it's the most complex screen in the app now and hasn't had
+  this pass yet.
 - `handoff` — if the next session also runs long, produce another one
   (read `~/.claude/.agents/skills/handoff/SKILL.md` directly — it's not
-  invokable through the `Skill` tool, same note as every prior handoff).
+  invokable through the `Skill` tool). This project's own convention is a
+  single living `HANDOFF.md` at the repo root (git-tracked), not a
+  temp-directory file — follow that, not the skill's generic default.
