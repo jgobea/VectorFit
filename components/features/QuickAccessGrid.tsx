@@ -11,9 +11,11 @@ interface QuickAccessItem {
   onPress: () => void;
 }
 
-// DESIGN_SPEC.md §B.5: 2x2 grid, icon + label. "View Progress" and
-// "Edit Routine" aren't among INSTRUCTIONS.md's 5 scoped pages — they still
-// respond (not inert), just with an honest "coming soon" instead of a route.
+// DESIGN_SPEC.md §B.5: 2x2 grid, icon + label. "View Progress" isn't among
+// INSTRUCTIONS.md's 5 scoped pages — it still responds (not inert), just
+// with an honest "coming soon" instead of a route. "Edit Routine" opens the
+// routine builder (app/routine-builder.tsx), which creates one on the fly
+// if the user doesn't have one yet.
 //
 // Two explicit flex-1 rows (not a wrapping flex row with % widths): a
 // percentage-width + flex-wrap grid resizes/re-centers unpredictably across
@@ -37,7 +39,7 @@ export function QuickAccessGrid() {
       key: 'routine',
       icon: 'edit-3',
       label: 'Edit Routine',
-      onPress: () => Alert.alert('Coming soon', 'Routine editing isn’t built yet.'),
+      onPress: () => router.push('/routine-builder'),
     },
   ];
 

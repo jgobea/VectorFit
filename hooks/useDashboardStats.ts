@@ -11,19 +11,19 @@ function startOfWeek(date: Date): Date {
   return d;
 }
 
-function toDateKey(iso: string): string {
-  return iso.slice(0, 10);
+function toDateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
-// Streak = consecutive calendar days (ending today or yesterday) with at
-// least one completed workout_session.
-function computeStreak(sessionDates: string[]): number {
-  const days = new Set(sessionDates.map(toDateKey));
+// Streak = consecutive calendar days (ending today or yesterday) with a
+// confirmed routine_day_completions row.
+function computeStreak(completedDates: string[]): number {
+  const days = new Set(completedDates);
   const cursor = new Date();
-  if (!days.has(toDateKey(cursor.toISOString()))) cursor.setDate(cursor.getDate() - 1);
+  if (!days.has(toDateKey(cursor))) cursor.setDate(cursor.getDate() - 1);
 
   let streak = 0;
-  while (days.has(toDateKey(cursor.toISOString()))) {
+  while (days.has(toDateKey(cursor))) {
     streak += 1;
     cursor.setDate(cursor.getDate() - 1);
   }
@@ -38,21 +38,19 @@ export function useDashboardStats(userId: string | undefined) {
     if (!userId) return;
     setIsLoading(true);
 
-    const weekStart = startOfWeek(new Date()).toISOString();
+    const weekStartKey = toDateKey(startOfWeek(new Date()));
 
-    const [weekSessions, allCompletedDates, bestForm] = await Promise.all([
+    const [weekCompletions, recentCompletions, bestForm] = await Promise.all([
       supabase
-        .from('workout_sessions')
-        .select('calories_burned')
+        .from('routine_day_completions')
+        .select('completed_date')
         .eq('user_id', userId)
-        .eq('status', 'completed')
-        .gte('started_at', weekStart),
+        .gte('completed_date', weekStartKey),
       supabase
-        .from('workout_sessions')
-        .select('started_at')
+        .from('routine_day_completions')
+        .select('completed_date')
         .eq('user_id', userId)
-        .eq('status', 'completed')
-        .order('started_at', { ascending: false })
+        .order('completed_date', { ascending: false })
         .limit(60),
       supabase
         .from('pose_sessions')
@@ -64,9 +62,8 @@ export function useDashboardStats(userId: string | undefined) {
     ]);
 
     setStats({
-      workoutsThisWeek: weekSessions.data?.length ?? 0,
-      caloriesBurned: (weekSessions.data ?? []).reduce((sum, s) => sum + (s.calories_burned ?? 0), 0),
-      streakDays: computeStreak((allCompletedDates.data ?? []).map((s) => s.started_at)),
+      workoutsThisWeek: weekCompletions.data?.length ?? 0,
+      streakDays: computeStreak((recentCompletions.data ?? []).map((s) => s.completed_date)),
       personalBestFormScore: bestForm.data?.best_rep_score ?? null,
     });
     setIsLoading(false);

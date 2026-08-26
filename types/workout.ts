@@ -11,29 +11,7 @@ export interface Exercise {
   image_url: string | null;
   video_url: string | null;
   quickpose_feature: string | null;
-}
-
-export interface WorkoutExercise {
-  id: string;
-  workout_id: string;
-  exercise_id: string;
-  order_index: number;
-  sets: number | null;
-  reps: number | null;
-  duration_seconds: number | null;
-  rest_seconds: number | null;
-  exercise?: Exercise;
-}
-
-export interface Workout {
-  id: string;
-  user_id: string;
-  name: string;
-  description: string | null;
-  difficulty: 'beginner' | 'intermediate' | 'advanced' | null;
-  estimated_duration_minutes: number | null;
-  scheduled_date: string | null;
-  exercises?: WorkoutExercise[];
+  created_by: string | null;
 }
 
 export interface WorkoutSession {

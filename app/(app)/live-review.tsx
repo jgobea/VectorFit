@@ -1,5 +1,5 @@
 import * as Device from 'expo-device';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,8 +20,29 @@ const IS_PHYSICAL_DEVICE = Device.isDevice;
 
 export default function LiveReviewScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    exerciseId?: string;
+    routineExerciseId?: string;
+    reps?: string;
+    sets?: string;
+    restSeconds?: string;
+  }>();
   const [config, setConfig] = useState<SessionConfig | null>(null);
   const setLiveReviewActive = useUiStore((s) => s.setLiveReviewActive);
+
+  // Deep-linked from Today's Workout's camera button (TodaysRoutineSection)
+  // — prefills LiveReviewSetup instead of making the user re-pick the
+  // exercise and re-type sets/reps/rest that are already in their routine.
+  const prefill =
+    params.exerciseId && params.routineExerciseId
+      ? {
+          exerciseId: params.exerciseId,
+          routineExerciseId: params.routineExerciseId,
+          reps: params.reps ? Number(params.reps) : null,
+          sets: params.sets ? Number(params.sets) : null,
+          restSeconds: params.restSeconds ? Number(params.restSeconds) : null,
+        }
+      : null;
 
   // Hides app/(app)/_layout.tsx's tab bar only once an actual camera
   // session is on screen (config set) — not during this setup form, which
@@ -48,7 +69,7 @@ export default function LiveReviewScreen() {
   }
 
   if (!config) {
-    return <LiveReviewSetup onStart={setConfig} />;
+    return <LiveReviewSetup onStart={setConfig} prefill={prefill} />;
   }
 
   return <LiveReviewWorkout config={config} onExit={() => router.replace('/(app)/dashboard')} />;

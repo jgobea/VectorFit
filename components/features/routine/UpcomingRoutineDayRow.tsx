@@ -2,26 +2,35 @@ import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import type { Workout } from '@/types/workout';
+import type { ScheduledDay } from '@/lib/routineSchedule';
 
-interface UpcomingWorkoutRowProps {
-  workout: Workout;
-}
-
-function formatDayLabel(dateStr: string): string {
-  const date = new Date(`${dateStr}T00:00:00`);
+function formatDayLabel(date: Date): string {
   return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-// DESIGN_SPEC.md §B.4: date label + collapsed/expandable preview per day.
-export function UpcomingWorkoutRow({ workout }: UpcomingWorkoutRowProps) {
+interface UpcomingRoutineDayRowProps {
+  scheduled: ScheduledDay;
+}
+
+// Mirrors UpcomingWorkoutRow (old scheduled_date model) for routine days —
+// rest days collapse to a single line instead of an expandable preview.
+export function UpcomingRoutineDayRow({ scheduled }: UpcomingRoutineDayRowProps) {
+  const { date, day } = scheduled;
   const [expanded, setExpanded] = useState(false);
-  const exercises = workout.exercises ?? [];
-  const preview = exercises
+  const preview = day.exercises
     .slice(0, 3)
     .map((e) => e.exercise?.name)
     .filter(Boolean)
     .join(', ');
+
+  if (day.is_rest_day) {
+    return (
+      <View className="flex-row items-center justify-between border-b border-border-light py-3.5 dark:border-border">
+        <Text className="font-body-medium text-small text-cyan-vivid">{formatDayLabel(date)}</Text>
+        <Text className="font-body text-small text-secondary-light dark:text-secondary">Rest day</Text>
+      </View>
+    );
+  }
 
   return (
     <Pressable
@@ -32,15 +41,10 @@ export function UpcomingWorkoutRow({ workout }: UpcomingWorkoutRowProps) {
     >
       <View className="flex-row items-center justify-between">
         <View className="flex-1 pr-3">
-          <Text className="font-body-medium text-small text-cyan-vivid">
-            {workout.scheduled_date ? formatDayLabel(workout.scheduled_date) : 'Unscheduled'}
-          </Text>
-          <Text className="mt-0.5 font-body-medium text-body text-primary-light dark:text-primary" numberOfLines={1}>
-            {workout.name}
-          </Text>
-          {!expanded && !!preview && (
+          <Text className="font-body-medium text-small text-cyan-vivid">{formatDayLabel(date)}</Text>
+          {!expanded && (
             <Text className="mt-0.5 font-body text-small text-secondary-light dark:text-secondary" numberOfLines={1}>
-              {preview}
+              {preview || 'No exercises added yet'}
             </Text>
           )}
         </View>
@@ -49,12 +53,12 @@ export function UpcomingWorkoutRow({ workout }: UpcomingWorkoutRowProps) {
 
       {expanded && (
         <View className="mt-2 gap-1">
-          {exercises.length === 0 && (
+          {day.exercises.length === 0 && (
             <Text className="font-body text-small text-secondary-light dark:text-secondary">
               No exercises added yet.
             </Text>
           )}
-          {exercises.map((e) => (
+          {day.exercises.map((e) => (
             <Text key={e.id} className="font-body text-small text-secondary-light dark:text-secondary">
               • {e.exercise?.name ?? 'Exercise'}
               {e.sets && e.reps ? ` — ${e.sets}×${e.reps}` : ''}

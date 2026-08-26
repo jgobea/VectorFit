@@ -6,6 +6,7 @@ import type { DashboardStats } from '@/types/dashboard';
 
 interface StatsSummaryCardProps {
   stats: DashboardStats | null;
+  todaysLoadKg: number;
 }
 
 interface StatCellProps {
@@ -39,9 +40,9 @@ function Divider() {
 // horizontal-scroll row of separate cards. Everything is visible at a
 // glance, no drag/swipe required, and there's nothing to resize/re-wrap
 // across breakpoints.
-export function StatsSummaryCard({ stats }: StatsSummaryCardProps) {
+export function StatsSummaryCard({ stats, todaysLoadKg }: StatsSummaryCardProps) {
   const workouts = String(stats?.workoutsThisWeek ?? 0);
-  const calories = `${stats?.caloriesBurned ?? 0}`;
+  const load = `${Math.round(todaysLoadKg)}`;
   const streak = `${stats?.streakDays ?? 0}d`;
   const best = stats?.personalBestFormScore != null ? String(Math.round(stats.personalBestFormScore)) : '—';
 
@@ -50,7 +51,7 @@ export function StatsSummaryCard({ stats }: StatsSummaryCardProps) {
       <View className="flex-row">
         <StatCell icon="check-circle" value={workouts} label="Workouts this week" />
         <Divider />
-        <StatCell icon="zap" value={calories} label="Calories burned" />
+        <StatCell icon="bar-chart-2" value={`${load}kg`} label="Today's load volume" />
       </View>
       <View className="my-3 h-px bg-border-light dark:bg-border" />
       <View className="flex-row">

@@ -2,6 +2,7 @@ import { QuickPoseThresholdCounter } from '@quickpose/react-native';
 import type { QuickPoseUpdateEvent } from '@quickpose/react-native';
 import { useCallback, useRef, useState } from 'react';
 
+import { toLocalDateKey } from '@/lib/routineSchedule';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import type { Exercise } from '@/types/workout';
@@ -11,6 +12,10 @@ export interface SessionConfig {
   targetReps: number;
   totalSets: number;
   restSeconds: number;
+  /** Set when this session was started from Today's Workout's camera
+   * button — finishing the workout marks that routine exercise done for
+   * today, same as the manual check does for non-Live-Review exercises. */
+  routineExerciseId?: string;
 }
 
 export interface LiveReviewSummary {
@@ -114,10 +119,22 @@ export function usePoseSession(config: SessionConfig) {
         feedback_summary: summary.feedbackSummary,
       });
       if (error) console.error('Failed to save pose session:', error);
+
+      if (config.routineExerciseId) {
+        const { error: completionError } = await supabase.from('routine_exercise_completions').upsert(
+          {
+            user_id: userId,
+            routine_exercise_id: config.routineExerciseId,
+            completed_date: toLocalDateKey(new Date()),
+          },
+          { onConflict: 'routine_exercise_id,completed_date' }
+        );
+        if (completionError) console.error('Failed to mark routine exercise complete:', completionError);
+      }
     }
 
     return summary;
-  }, [buildSummary, config.exercise.id, config.targetReps, config.totalSets, userId]);
+  }, [buildSummary, config.exercise.id, config.routineExerciseId, config.targetReps, config.totalSets, userId]);
 
   return {
     currentSet,
