@@ -36,6 +36,14 @@ export function LiveReviewBottomPanel({
   onStop,
   onFinishSet,
 }: LiveReviewBottomPanelProps) {
+  // QuickPose only sends a feedbackText string when it has a specific
+  // correction to make — no string doesn't mean "I can't see you," it means
+  // "nothing to correct right now." Before any frame has been tracked yet
+  // (formScore/reps both still 0) that's genuinely "get in frame"; once
+  // tracking is live, an empty correction is good news, so the fallback
+  // copy shouldn't read like a tracking failure at that point.
+  const hasStarted = formScore > 0 || reps > 0;
+
   return (
     <View className="gap-4 bg-black/50 px-4 pb-8 pt-5">
       <View className="flex-row items-end justify-between">
@@ -56,7 +64,7 @@ export function LiveReviewBottomPanel({
       </View>
 
       <Text className="min-h-[22px] font-body-semibold text-body text-primary" numberOfLines={2}>
-        {feedbackText ?? 'Position yourself in frame to begin'}
+        {feedbackText ?? (hasStarted ? 'Nice form — keep it up!' : 'Position yourself in frame to begin')}
       </Text>
 
       {isSetComplete && (

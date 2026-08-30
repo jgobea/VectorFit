@@ -78,7 +78,13 @@ export function LiveReviewWorkout({ config, onExit }: LiveReviewWorkoutProps) {
       />
       {stage === 'resting' && (
         <View className="absolute bottom-0 left-0 right-0 top-0">
-          <RestTimer restSeconds={config.restSeconds} nextSetNumber={session.currentSet} onStartNextSet={handleStartNextSet} />
+          <RestTimer
+            restSeconds={config.restSeconds}
+            nextSetNumber={session.currentSet}
+            coachFeedback={session.coachFeedback}
+            isFetchingCoachFeedback={session.isFetchingCoachFeedback}
+            onStartNextSet={handleStartNextSet}
+          />
         </View>
       )}
       {stage === 'session' && (
@@ -109,6 +115,8 @@ export function LiveReviewWorkout({ config, onExit }: LiveReviewWorkoutProps) {
         exerciseName={config.exercise.name}
         totalSets={config.totalSets}
         summary={summary}
+        coachFeedback={session.coachFeedback}
+        isFetchingCoachFeedback={session.isFetchingCoachFeedback}
         onDone={onExit}
       />
     </View>

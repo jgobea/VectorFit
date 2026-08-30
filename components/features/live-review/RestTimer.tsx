@@ -1,3 +1,4 @@
+import { Feather } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,6 +8,8 @@ import { Button } from '@/components/ui/Button';
 interface RestTimerProps {
   restSeconds: number;
   nextSetNumber: number;
+  coachFeedback: string | null;
+  isFetchingCoachFeedback: boolean;
   onStartNextSet: () => void;
 }
 
@@ -14,7 +17,13 @@ interface RestTimerProps {
 // sets, with a manual "Start Set N" button once it hits zero rather than
 // auto-advancing, so the user decides when they're ready. Skipping early is
 // also offered — no reason to force someone to wait out a full rest period.
-export function RestTimer({ restSeconds, nextSetNumber, onStartNextSet }: RestTimerProps) {
+export function RestTimer({
+  restSeconds,
+  nextSetNumber,
+  coachFeedback,
+  isFetchingCoachFeedback,
+  onStartNextSet,
+}: RestTimerProps) {
   const [secondsLeft, setSecondsLeft] = useState(restSeconds);
 
   useEffect(() => {
@@ -34,6 +43,16 @@ export function RestTimer({ restSeconds, nextSetNumber, onStartNextSet }: RestTi
         <Text className="font-display text-primary" style={{ fontSize: 64, lineHeight: 72 }}>
           {minutes}:{String(seconds).padStart(2, '0')}
         </Text>
+
+        {(isFetchingCoachFeedback || coachFeedback) && (
+          <View className="w-full max-w-xs flex-row items-start gap-2 rounded-xl border border-cyan-vivid/30 bg-cyan-vivid/10 px-4 py-3">
+            <Feather name="zap" size={16} color="#00E5FF" style={{ marginTop: 2 }} />
+            <Text className="flex-1 font-body text-small text-primary">
+              {isFetchingCoachFeedback ? 'Coach is thinking…' : coachFeedback}
+            </Text>
+          </View>
+        )}
+
         <Button
           label={isDone ? `Start Set ${nextSetNumber}` : `Skip Rest — Start Set ${nextSetNumber}`}
           variant={isDone ? 'primary' : 'secondary'}
