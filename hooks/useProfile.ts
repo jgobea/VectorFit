@@ -49,6 +49,12 @@ export function useProfile() {
     setIsEditing(false);
   }, []);
 
+  // Every field on UserProfile is a primitive now (the last array fields —
+  // preferred_workout_types/rest_days — were dropped with the Preferences
+  // section), so a plain JSON diff is a reliable dirty-check without
+  // needing a per-field comparison.
+  const hasUnsavedChanges = draft !== null && JSON.stringify(draft) !== JSON.stringify(profile);
+
   const patchDraft = useCallback((patch: Partial<UserProfile>) => {
     setDraft((prev) => (prev ? { ...prev, ...patch } : prev));
   }, []);
@@ -95,6 +101,7 @@ export function useProfile() {
     isLoading,
     isSaving,
     isEditing,
+    hasUnsavedChanges,
     error,
     successMessage,
     clearSuccess: () => setSuccessMessage(null),

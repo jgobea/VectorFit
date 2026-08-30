@@ -17,10 +17,6 @@ export interface UserProfile {
   experience_level: 'beginner' | 'intermediate' | 'advanced' | null;
   workout_frequency_days: number | null;
   injuries_limitations: string | null;
-  preferred_workout_types: string[];
-  preferred_duration_minutes: 30 | 45 | 60 | 90 | null;
-  training_time_preference: string | null;
-  rest_days: string[];
   ai_feedback_intensity: 'gentle' | 'moderate' | 'intense';
   ai_voice_feedback_enabled: boolean;
   ai_voice_volume: number;

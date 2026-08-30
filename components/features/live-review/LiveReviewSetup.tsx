@@ -1,7 +1,8 @@
 import { Feather } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -38,6 +39,10 @@ export function LiveReviewSetup({ onStart, prefill }: LiveReviewSetupProps) {
   const [restSeconds, setRestSeconds] = useState(60);
   const [infoOpen, setInfoOpen] = useState(false);
   const { exercises, isLoading: isCatalogLoading, error: catalogError } = useExerciseCatalog();
+  // The tab bar floats (position: 'absolute' in app/(app)/_layout.tsx) now
+  // instead of reserving its own space.
+  const tabBarHeight = useBottomTabBarHeight();
+  const insets = useSafeAreaInsets();
 
   // Applies once the catalog loads and a matching exercise is found —
   // deep-linked from Today's Workout's camera button (only fires for
@@ -53,10 +58,18 @@ export function LiveReviewSetup({ onStart, prefill }: LiveReviewSetupProps) {
   }, [prefill, exercises]);
 
   return (
-    // 'bottom' excluded: the Tabs bar below this screen already covers the
-    // bottom safe-area inset (visible here — it only hides once a session
-    // actually starts, see app/(app)/live-review.tsx).
-    <SafeAreaView className="flex-1 bg-background-light dark:bg-background" edges={['top']}>
+    // 'bottom' excluded: the inline paddingBottom below already shrinks the
+    // visible viewport to clear the floating tab bar (position: 'absolute'
+    // in app/(app)/_layout.tsx, which itself already accounts for the
+    // bottom safe-area inset) — done on the SafeAreaView itself rather than
+    // the ScrollView's content, so justify-center below still centers the
+    // card within the space actually visible above the pill instead of
+    // within a taller, partly-hidden scroll area.
+    <SafeAreaView
+      className="flex-1 bg-background-light dark:bg-background"
+      edges={['top']}
+      style={{ paddingBottom: tabBarHeight + insets.bottom + 12 }}
+    >
       <ScrollView
         contentContainerClassName="flex-grow items-center justify-center px-4 py-6"
         keyboardShouldPersistTaps="handled"

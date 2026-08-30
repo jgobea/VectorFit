@@ -3,7 +3,7 @@ import { useIsFocused } from '@react-navigation/native';
 import { Redirect, Tabs } from 'expo-router';
 import { useColorScheme } from 'nativewind';
 import { ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
 import { useOnboardingGate } from '@/hooks/useOnboardingGate';
@@ -22,6 +22,7 @@ export default function AppLayout() {
   const theme = Colors[colorScheme === 'light' ? 'light' : 'dark'];
   const isLiveReviewActive = useUiStore((s) => s.isLiveReviewActive);
   const onboardingStatus = useOnboardingGate(session?.user.id);
+  const insets = useSafeAreaInsets();
   // This whole Tabs group stays mounted underneath full-screen routes pushed
   // on top of it (e.g. routine-builder, outside the group) — react-navigation
   // keeps prior stack screens alive for gesture-back. Without gating on
@@ -49,13 +50,50 @@ export default function AppLayout() {
 
   return (
     <Tabs
+      // Tells the bar's own internal layout to treat the bottom safe-area
+      // inset as 0 (it otherwise pads its own content by insets.bottom,
+      // baked inside the pill) — the real inset is applied once, below, to
+      // the whole floating pill's position instead. Without this override,
+      // the pill's rounded background was tall enough to visually extend
+      // down into the phone's own 3-button nav bar row, even though the
+      // tab icons themselves stayed clear of it.
+      safeAreaInsets={{ bottom: 0 }}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: Colors.cyanVivid,
         tabBarInactiveTintColor: theme.textSecondary,
+        // Floating pill instead of a bar flush with the screen edge, per
+        // explicit request. This has to be position: 'absolute' — leaving it
+        // in normal flow (a margin/borderRadius'd box that still reserves
+        // its own space) left React Navigation's own tab-bar-wrapping
+        // container exposed as a plain dark-gray rectangle around the pill,
+        // not matching this app's theme at all (that wrapper isn't
+        // something tabBarStyle can recolor). Going absolute removes that
+        // wrapper's reserved space entirely — the pill now floats directly
+        // over each screen's own background instead. Every Tabs.Screen's
+        // scrollable content adds paddingBottom via
+        // useBottomTabBarHeight() so it doesn't end up hidden behind it.
         tabBarStyle: isLiveReviewActive
           ? { display: 'none' }
-          : { backgroundColor: theme.surface, borderTopColor: theme.border },
+          : {
+              position: 'absolute',
+              left: 16,
+              right: 16,
+              bottom: insets.bottom + 6,
+              // An explicit height overrides RN Navigation's own default
+              // calculation (49 + inset — with the inset now zeroed out via
+              // safeAreaInsets above, that default alone read as too thin).
+              height: 68,
+              backgroundColor: theme.surface,
+              borderWidth: 1,
+              borderColor: theme.border,
+              borderRadius: 24,
+              elevation: 8,
+              shadowColor: '#000',
+              shadowOpacity: 0.15,
+              shadowRadius: 12,
+              shadowOffset: { width: 0, height: 4 },
+            },
         tabBarLabelStyle: { fontFamily: 'Inter-Medium', fontSize: 11 },
         // Without this, the tab bar keeps its reserved footer space when the
         // keyboard opens, which starves Chat's KeyboardAvoidingView of the

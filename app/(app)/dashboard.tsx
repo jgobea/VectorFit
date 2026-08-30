@@ -1,9 +1,10 @@
 import { Feather } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AchievementSection } from '@/components/features/AchievementSection';
 import { DashboardHeader } from '@/components/features/DashboardHeader';
@@ -20,6 +21,14 @@ import { getTodayRoutineDay, getUpcomingRoutineDays } from '@/lib/routineSchedul
 
 export default function DashboardScreen() {
   const router = useRouter();
+  // The tab bar now floats (position: 'absolute' in app/(app)/_layout.tsx)
+  // instead of reserving its own space, so scroll content needs its own
+  // bottom padding to clear it — same reasoning on every Tabs.Screen.
+  // insets.bottom + 12 mirrors the pill's own `bottom` offset there (the
+  // bar's safeAreaInsets override means tabBarHeight alone no longer
+  // includes it).
+  const tabBarHeight = useBottomTabBarHeight();
+  const insets = useSafeAreaInsets();
   const { greeting, quote, profile, stats, isRefreshing, onRefresh, error } = useDashboard();
   const { routine, isLoading: isRoutineLoading, reload: reloadRoutine } = useRoutine();
   const { completedIds, toggle: toggleExerciseComplete, complete: completeExercise } = useTodayCompletions();
@@ -47,7 +56,8 @@ export default function DashboardScreen() {
       <DashboardHeader greeting={greeting} avatarUrl={profile?.avatar_url ?? null} />
 
       <ScrollView
-        contentContainerClassName="gap-section pb-12"
+        contentContainerClassName="gap-section"
+        contentContainerStyle={{ paddingBottom: tabBarHeight + insets.bottom + 24 }}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#00E5FF" />}
       >

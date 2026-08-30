@@ -1,8 +1,9 @@
 import { Feather } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import { useEffect, useRef } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ChatBubble } from '@/components/features/ChatBubble';
 import { ChatErrorBanner } from '@/components/features/ChatErrorBanner';
@@ -15,6 +16,12 @@ import type { ChatUIMessage } from '@/types/chat';
 export default function ChatScreen() {
   const { messages, isLoading, isSending, error, sendMessage, retry, canRetry } = useChat();
   const listRef = useRef<FlashListRef<ChatUIMessage>>(null);
+  // The tab bar floats (position: 'absolute' in app/(app)/_layout.tsx) now
+  // instead of reserving its own space — without this, ChatInput would
+  // render flush at the screen's bottom edge, right under the floating
+  // pill, instead of clear of it.
+  const tabBarHeight = useBottomTabBarHeight();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -45,7 +52,7 @@ export default function ChatScreen() {
            and shrinks itself directly, independent of window resize.
       */}
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={{ flex: 1, paddingBottom: tabBarHeight + insets.bottom + 12 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
       >
