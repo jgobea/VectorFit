@@ -15,6 +15,12 @@ function toDateKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
+function startOfLocalDay(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 // Streak = consecutive calendar days (ending today or yesterday) with a
 // confirmed routine_day_completions row.
 function computeStreak(completedDates: string[]): number {
@@ -39,8 +45,10 @@ export function useDashboardStats(userId: string | undefined) {
     setIsLoading(true);
 
     const weekStartKey = toDateKey(startOfWeek(new Date()));
+    const now = new Date();
+    const todayStartISO = startOfLocalDay(now).toISOString();
 
-    const [weekCompletions, recentCompletions, bestForm] = await Promise.all([
+    const [weekCompletions, recentCompletions, bestForm, todaySessions] = await Promise.all([
       supabase
         .from('routine_day_completions')
         .select('completed_date')
@@ -59,12 +67,25 @@ export function useDashboardStats(userId: string | undefined) {
         .order('best_rep_score', { ascending: false })
         .limit(1)
         .maybeSingle(),
+      supabase
+        .from('pose_sessions')
+        .select('started_at, ended_at')
+        .eq('user_id', userId)
+        .not('ended_at', 'is', null)
+        .gte('started_at', todayStartISO),
     ]);
+
+    const todaysActiveSeconds = (todaySessions.data ?? []).reduce((sum, s) => {
+      if (!s.ended_at) return sum;
+      const seconds = (new Date(s.ended_at).getTime() - new Date(s.started_at).getTime()) / 1000;
+      return sum + Math.max(0, seconds);
+    }, 0);
 
     setStats({
       workoutsThisWeek: weekCompletions.data?.length ?? 0,
       streakDays: computeStreak((recentCompletions.data ?? []).map((s) => s.completed_date)),
       personalBestFormScore: bestForm.data?.best_rep_score ?? null,
+      todaysActiveMinutes: Math.round(todaysActiveSeconds / 60),
     });
     setIsLoading(false);
   }, [userId]);

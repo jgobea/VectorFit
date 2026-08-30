@@ -35,11 +35,23 @@ export function useAllExercises() {
   // Custom exercises can never carry a quickpose_feature — RLS enforces
   // this too (exercises_insert_own_custom), this just matches it client-side.
   const createCustomExercise = useCallback(
-    async (name: string, category: string | null) => {
+    async (
+      name: string,
+      category: string | null,
+      measurementType: 'reps' | 'time' = 'reps',
+      timeMode: 'countdown' | 'stopwatch' | null = null
+    ) => {
       if (!userId) return null;
       const { data, error: insertError } = await supabase
         .from('exercises')
-        .insert({ name, category, created_by: userId, quickpose_feature: null })
+        .insert({
+          name,
+          category,
+          created_by: userId,
+          quickpose_feature: null,
+          measurement_type: measurementType,
+          time_mode: measurementType === 'time' ? (timeMode ?? 'stopwatch') : null,
+        })
         .select('*')
         .single();
 

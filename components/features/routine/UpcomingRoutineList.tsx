@@ -1,5 +1,4 @@
-import { FlashList } from '@shopify/flash-list';
-import { Text, View } from 'react-native';
+import { Text } from 'react-native';
 
 import { Card } from '@/components/ui/Card';
 import { UpcomingRoutineDayRow } from '@/components/features/routine/UpcomingRoutineDayRow';
@@ -9,6 +8,11 @@ interface UpcomingRoutineListProps {
   days: ScheduledDay[];
 }
 
+// A plain mapped list, not FlashList — rows can expand/collapse and a rest
+// day is shorter than a workout day, so a virtualized list with a guessed
+// fixed row height either left empty space below short content or clipped
+// expanded rows. This is a handful of items (max 6) inside an already
+// non-scrolling Card, so there's nothing virtualization would buy here.
 export function UpcomingRoutineList({ days }: UpcomingRoutineListProps) {
   if (days.length === 0) {
     return (
@@ -22,14 +26,9 @@ export function UpcomingRoutineList({ days }: UpcomingRoutineListProps) {
 
   return (
     <Card>
-      <View style={{ minHeight: days.length * 60 }}>
-        <FlashList
-          data={days}
-          renderItem={({ item }) => <UpcomingRoutineDayRow scheduled={item} />}
-          keyExtractor={(item) => item.day.id}
-          scrollEnabled={false}
-        />
-      </View>
+      {days.map((scheduled) => (
+        <UpcomingRoutineDayRow key={scheduled.day.id} scheduled={scheduled} />
+      ))}
     </Card>
   );
 }

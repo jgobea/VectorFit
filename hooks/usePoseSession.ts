@@ -43,6 +43,10 @@ export function usePoseSession(config: SessionConfig) {
   const setTalliesRef = useRef<SetTally[]>([]);
   const scoresRef = useRef<number[]>([]);
   const feedbacksRef = useRef<Set<string>>(new Set());
+  // Captured once at mount (session start), not at insert time — `started_at`
+  // otherwise defaults to `now()` in the DB, which lands within milliseconds
+  // of `ended_at` and makes every session's duration read as ~0.
+  const startedAtRef = useRef(new Date().toISOString());
 
   const [currentSet, setCurrentSet] = useState(1);
   const [reps, setReps] = useState(0);
@@ -111,6 +115,7 @@ export function usePoseSession(config: SessionConfig) {
       const { error } = await supabase.from('pose_sessions').insert({
         user_id: userId,
         exercise_id: config.exercise.id,
+        started_at: startedAtRef.current,
         ended_at: new Date().toISOString(),
         total_reps: summary.totalReps,
         target_reps: config.targetReps * config.totalSets,

@@ -7,15 +7,17 @@ import type { DashboardStats } from '@/types/dashboard';
 interface StatsSummaryCardProps {
   stats: DashboardStats | null;
   todaysLoadKg: number;
+  goalWorkoutsPerWeek: number;
 }
 
 interface StatCellProps {
   icon: keyof typeof Feather.glyphMap;
   value: string;
   label: string;
+  labelSuffix?: string;
 }
 
-function StatCell({ icon, value, label }: StatCellProps) {
+function StatCell({ icon, value, label, labelSuffix }: StatCellProps) {
   return (
     <View className="flex-1 items-center gap-1.5 px-2">
       <Feather name={icon} size={17} color="#00E5FF" />
@@ -27,6 +29,7 @@ function StatCell({ icon, value, label }: StatCellProps) {
         numberOfLines={2}
       >
         {label}
+        {labelSuffix ? <Text className="text-secondary-light/60 dark:text-secondary/60"> ({labelSuffix})</Text> : null}
       </Text>
     </View>
   );
@@ -40,11 +43,11 @@ function Divider() {
 // horizontal-scroll row of separate cards. Everything is visible at a
 // glance, no drag/swipe required, and there's nothing to resize/re-wrap
 // across breakpoints.
-export function StatsSummaryCard({ stats, todaysLoadKg }: StatsSummaryCardProps) {
-  const workouts = String(stats?.workoutsThisWeek ?? 0);
+export function StatsSummaryCard({ stats, todaysLoadKg, goalWorkoutsPerWeek }: StatsSummaryCardProps) {
+  const workouts = `${stats?.workoutsThisWeek ?? 0}/${goalWorkoutsPerWeek}`;
   const load = `${Math.round(todaysLoadKg)}`;
   const streak = `${stats?.streakDays ?? 0}d`;
-  const best = stats?.personalBestFormScore != null ? String(Math.round(stats.personalBestFormScore)) : '—';
+  const activeMinutes = `${stats?.todaysActiveMinutes ?? 0}m`;
 
   return (
     <Card>
@@ -57,7 +60,7 @@ export function StatsSummaryCard({ stats, todaysLoadKg }: StatsSummaryCardProps)
       <View className="flex-row">
         <StatCell icon="repeat" value={streak} label="Day streak" />
         <Divider />
-        <StatCell icon="trending-up" value={best} label="Best form score" />
+        <StatCell icon="clock" value={activeMinutes} label="Today's active time" labelSuffix="including live review" />
       </View>
     </Card>
   );

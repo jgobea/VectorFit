@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { ExercisePickerModal } from '@/components/features/ExercisePickerModal';
 import { DayVolumeSummary } from '@/components/features/routine/DayVolumeSummary';
+import { DraggableExerciseList } from '@/components/features/routine/DraggableExerciseList';
 import { RoutineExerciseCard } from '@/components/features/routine/RoutineExerciseCard';
 import { useAllExercises } from '@/hooks/useAllExercises';
 import { useRoutineExerciseActions } from '@/hooks/useRoutineExerciseActions';
@@ -18,27 +19,29 @@ export function RoutineDayExercises({ day }: RoutineDayExercisesProps) {
   const userId = useAuthStore((s) => s.user?.id);
   const [pickerOpen, setPickerOpen] = useState(false);
   const { exercises, isLoading, error, createCustomExercise, deleteCustomExercise } = useAllExercises();
-  const { addExercise, updateExercise, removeExercise, moveExercise } = useRoutineExerciseActions();
+  const { addExercise, updateExercise, removeExercise, reorderExercises } = useRoutineExerciseActions();
 
   const patchOf =
-    (exerciseId: string) => (patch: Partial<Pick<RoutineExercise, 'sets' | 'reps' | 'weight_kg' | 'rest_seconds'>>) =>
+    (exerciseId: string) =>
+    (patch: Partial<Pick<RoutineExercise, 'sets' | 'reps' | 'weight_kg' | 'duration_seconds' | 'rest_seconds'>>) =>
       updateExercise(exerciseId, patch);
 
   return (
     <View className="gap-3">
       <DayVolumeSummary exercises={day.exercises} />
 
-      {day.exercises.map((exercise, index) => (
-        <RoutineExerciseCard
-          key={exercise.id}
-          exercise={exercise}
-          canMoveUp={index > 0}
-          canMoveDown={index < day.exercises.length - 1}
-          onChange={patchOf(exercise.id)}
-          onMove={(direction) => moveExercise(day.id, exercise.id, direction)}
-          onRemove={() => removeExercise(day.id, exercise.id)}
-        />
-      ))}
+      <DraggableExerciseList
+        items={day.exercises}
+        onReorder={(orderedIds) => reorderExercises(day.id, orderedIds)}
+        renderItem={(exercise, dragHandle) => (
+          <RoutineExerciseCard
+            exercise={exercise}
+            dragHandle={dragHandle}
+            onChange={patchOf(exercise.id)}
+            onRemove={() => removeExercise(day.id, exercise.id)}
+          />
+        )}
+      />
 
       <Pressable
         onPress={() => setPickerOpen(true)}
@@ -55,7 +58,7 @@ export function RoutineDayExercises({ day }: RoutineDayExercisesProps) {
         isLoading={isLoading}
         error={error}
         currentUserId={userId}
-        onCreateCustom={(name) => createCustomExercise(name, null)}
+        onCreateCustom={(name, measurementType, timeMode) => createCustomExercise(name, null, measurementType, timeMode)}
         onDeleteCustom={deleteCustomExercise}
         onClose={() => setPickerOpen(false)}
         onSelect={(exercise) => {

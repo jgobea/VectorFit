@@ -15,7 +15,7 @@ interface ExercisePickerModalProps {
   /** Current user's id, to tell their own custom exercises apart from shared/seeded ones. */
   currentUserId?: string;
   /** Omit to disable "add your own exercise" — e.g. Live Review's picker, where a custom exercise with no quickpose_feature couldn't be used anyway. */
-  onCreateCustom?: (name: string) => void;
+  onCreateCustom?: (name: string, measurementType: 'reps' | 'time', timeMode: 'countdown' | 'stopwatch' | null) => void;
   onDeleteCustom?: (exerciseId: string) => void;
   onClose: () => void;
   onSelect: (exercise: Exercise) => void;
@@ -66,13 +66,17 @@ export function ExercisePickerModal({
 }: ExercisePickerModalProps) {
   const [creating, setCreating] = useState(false);
   const [draftName, setDraftName] = useState('');
+  const [draftMeasurementType, setDraftMeasurementType] = useState<'reps' | 'time'>('reps');
+  const [draftTimeMode, setDraftTimeMode] = useState<'countdown' | 'stopwatch'>('stopwatch');
   const groups = groupByCategory(exercises);
 
   const submitCustom = () => {
     const name = draftName.trim();
     if (!name || !onCreateCustom) return;
-    onCreateCustom(name);
+    onCreateCustom(name, draftMeasurementType, draftMeasurementType === 'time' ? draftTimeMode : null);
     setDraftName('');
+    setDraftMeasurementType('reps');
+    setDraftTimeMode('stopwatch');
     setCreating(false);
   };
 
@@ -104,6 +108,63 @@ export function ExercisePickerModal({
                     onSubmitEditing={submitCustom}
                     className="h-12 rounded-xl border border-border-light px-4 font-body text-body text-primary-light dark:border-border dark:text-primary"
                   />
+
+                  <View className="flex-row rounded-xl border border-border-light p-1 dark:border-border">
+                    <Pressable
+                      onPress={() => setDraftMeasurementType('reps')}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: draftMeasurementType === 'reps' }}
+                      className={`h-9 flex-1 items-center justify-center rounded-lg ${draftMeasurementType === 'reps' ? 'bg-cyan-vivid/15' : ''}`}
+                    >
+                      <Text
+                        className={`font-body-semibold text-small ${draftMeasurementType === 'reps' ? 'text-cyan-vivid' : 'text-secondary-light dark:text-secondary'}`}
+                      >
+                        Weight / Reps
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => setDraftMeasurementType('time')}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: draftMeasurementType === 'time' }}
+                      className={`h-9 flex-1 items-center justify-center rounded-lg ${draftMeasurementType === 'time' ? 'bg-cyan-vivid/15' : ''}`}
+                    >
+                      <Text
+                        className={`font-body-semibold text-small ${draftMeasurementType === 'time' ? 'text-cyan-vivid' : 'text-secondary-light dark:text-secondary'}`}
+                      >
+                        Time
+                      </Text>
+                    </Pressable>
+                  </View>
+
+                  {draftMeasurementType === 'time' && (
+                    <View className="flex-row rounded-xl border border-border-light p-1 dark:border-border">
+                      <Pressable
+                        onPress={() => setDraftTimeMode('stopwatch')}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: draftTimeMode === 'stopwatch' }}
+                        className={`h-9 flex-1 items-center justify-center rounded-lg ${draftTimeMode === 'stopwatch' ? 'bg-cyan-vivid/15' : ''}`}
+                      >
+                        <Text
+                          className={`font-body-semibold text-small ${draftTimeMode === 'stopwatch' ? 'text-cyan-vivid' : 'text-secondary-light dark:text-secondary'}`}
+                        >
+                          Count up
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => setDraftTimeMode('countdown')}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: draftTimeMode === 'countdown' }}
+                        className={`h-9 flex-1 items-center justify-center rounded-lg ${draftTimeMode === 'countdown' ? 'bg-cyan-vivid/15' : ''}`}
+                      >
+                        <Text
+                          className={`font-body-semibold text-small ${draftTimeMode === 'countdown' ? 'text-cyan-vivid' : 'text-secondary-light dark:text-secondary'}`}
+                        >
+                          Countdown
+                        </Text>
+                      </Pressable>
+                    </View>
+                  )}
+
                   <View className="flex-row gap-2">
                     <View className="flex-1">
                       <Button label="Cancel" variant="secondary" onPress={() => setCreating(false)} />

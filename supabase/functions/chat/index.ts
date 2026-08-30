@@ -47,7 +47,16 @@ interface UserProfileRow {
   injuries_limitations: string | null;
   ai_feedback_intensity: string | null;
   ai_coaching_style: string | null;
+  language_preference: string | null;
 }
+
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: 'English',
+  es: 'Spanish',
+  fr: 'French',
+  de: 'German',
+  pt: 'Portuguese',
+};
 
 // Renders only the fields the user actually filled in (onboarding/Profile
 // are both skippable/partial) — an empty section is worse than no section.
@@ -68,8 +77,14 @@ function buildProfileContext(profile: UserProfileRow | null): string {
   if (profile.ai_coaching_style) lines.push(`Preferred coaching style: ${profile.ai_coaching_style}`);
   if (profile.ai_feedback_intensity) lines.push(`Preferred feedback intensity: ${profile.ai_feedback_intensity}`);
 
+  const languageName = profile.language_preference ? LANGUAGE_NAMES[profile.language_preference] : null;
+  if (languageName) lines.push(`Preferred language: ${languageName}`);
+
   if (lines.length === 0) return '';
-  return `\n\nHere is what you know about this specific user — use it to personalize your\nanswers (e.g. tailor exercise suggestions to their goal and experience level,\nrespect stated injuries/limitations, match the requested feedback intensity\nand coaching style). Do not recite this list back to them verbatim.\n${lines.join('\n')}`;
+  const languageInstruction = languageName
+    ? `\n\nIMPORTANT: Reply in ${languageName}, regardless of what language the user writes in, unless they explicitly ask you to switch languages.`
+    : '';
+  return `\n\nHere is what you know about this specific user — use it to personalize your\nanswers (e.g. tailor exercise suggestions to their goal and experience level,\nrespect stated injuries/limitations, match the requested feedback intensity\nand coaching style). Do not recite this list back to them verbatim.\n${lines.join('\n')}${languageInstruction}`;
 }
 
 interface IncomingMessage {
@@ -157,7 +172,7 @@ Deno.serve(async (req) => {
     const { data: profile } = await authClient
       .from('users')
       .select(
-        'full_name, age, gender, height_cm, weight_kg, body_type, primary_goal, experience_level, workout_frequency_days, injuries_limitations, ai_feedback_intensity, ai_coaching_style'
+        'full_name, age, gender, height_cm, weight_kg, body_type, primary_goal, experience_level, workout_frequency_days, injuries_limitations, ai_feedback_intensity, ai_coaching_style, language_preference'
       )
       .eq('id', user.id)
       .single<UserProfileRow>();

@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SystemUI from 'expo-system-ui';
 import { colorScheme } from 'nativewind';
 import { Appearance } from 'react-native';
 import { create } from 'zustand';
@@ -20,6 +21,13 @@ interface UiState {
   setLiveReviewActive: (isLiveReviewActive: boolean) => void;
 }
 
+// tailwind.config.js's background / background-light tokens — kept in sync
+// manually since this runs outside NativeWind's class resolution.
+const WINDOW_BACKGROUND: Record<'light' | 'dark', string> = {
+  light: '#FAFAFA',
+  dark: '#1C1C1E',
+};
+
 // NativeWind's darkMode:'class' is a manual switch by design (that's the
 // difference from darkMode:'media') — colorScheme.set('system') does NOT
 // follow the OS/browser preference, it just clears to light. To actually
@@ -28,6 +36,11 @@ interface UiState {
 function applyTheme(theme: ThemePreference) {
   const resolved = theme === 'system' ? (Appearance.getColorScheme() === 'dark' ? 'dark' : 'light') : theme;
   colorScheme.set(resolved);
+  // The native root window's background was never set, so it defaulted to
+  // Android's own theme default — a plain gray that flashes through during
+  // transient layout gaps (e.g. the keyboard-dismiss animation frame on
+  // screens with several inputs, like the routine builder).
+  SystemUI.setBackgroundColorAsync(WINDOW_BACKGROUND[resolved]);
 }
 
 // Runs as soon as this module is imported (not lazily on first hook use), so

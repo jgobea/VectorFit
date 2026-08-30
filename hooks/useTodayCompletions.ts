@@ -56,5 +56,20 @@ export function useTodayCompletions() {
     [userId, completedIds]
   );
 
-  return { completedIds, toggle, isLoading, reload: load };
+  // Unlike toggle, always marks done — never un-marks. Used when a timed
+  // set (see ExerciseTimerModal) finishes, where "done" is the only
+  // meaningful outcome.
+  const complete = useCallback(
+    async (routineExerciseId: string) => {
+      if (!userId || completedIds.has(routineExerciseId)) return;
+      setCompletedIds((prev) => new Set(prev).add(routineExerciseId));
+      await supabase.from('routine_exercise_completions').upsert(
+        { user_id: userId, routine_exercise_id: routineExerciseId, completed_date: toLocalDateKey(new Date()) },
+        { onConflict: 'routine_exercise_id,completed_date' }
+      );
+    },
+    [userId, completedIds]
+  );
+
+  return { completedIds, toggle, complete, isLoading, reload: load };
 }

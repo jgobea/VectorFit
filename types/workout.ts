@@ -12,6 +12,8 @@ export interface Exercise {
   video_url: string | null;
   quickpose_feature: string | null;
   created_by: string | null;
+  measurement_type: 'reps' | 'time';
+  time_mode: 'countdown' | 'stopwatch' | null;
 }
 
 export interface WorkoutSession {

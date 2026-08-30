@@ -3,9 +3,16 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import type { ScheduledDay } from '@/lib/routineSchedule';
+import { DAY_LABELS_SHORT } from '@/types/routine';
 
+const MONTH_LABELS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// Hand-rolled instead of toLocaleDateString(undefined, {...}) — Hermes's
+// Intl support is incomplete for some device locales and was silently
+// dropping the month name (e.g. rendering "jue, 3 de" with nothing after
+// "de"). This can't produce a partial string.
 function formatDayLabel(date: Date): string {
-  return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  return `${DAY_LABELS_SHORT[date.getDay()]}, ${MONTH_LABELS_SHORT[date.getMonth()]} ${date.getDate()}`;
 }
 
 interface UpcomingRoutineDayRowProps {
@@ -26,7 +33,12 @@ export function UpcomingRoutineDayRow({ scheduled }: UpcomingRoutineDayRowProps)
   if (day.is_rest_day) {
     return (
       <View className="flex-row items-center justify-between border-b border-border-light py-3.5 dark:border-border">
-        <Text className="font-body-medium text-small text-cyan-vivid">{formatDayLabel(date)}</Text>
+        <Text className="flex-1 pr-3 font-body-medium text-small text-cyan-vivid" numberOfLines={1}>
+          {formatDayLabel(date)}
+          {!!day.name && (
+            <Text className="font-body-medium text-small text-primary-light dark:text-primary"> · {day.name}</Text>
+          )}
+        </Text>
         <Text className="font-body text-small text-secondary-light dark:text-secondary">Rest day</Text>
       </View>
     );
@@ -41,7 +53,12 @@ export function UpcomingRoutineDayRow({ scheduled }: UpcomingRoutineDayRowProps)
     >
       <View className="flex-row items-center justify-between">
         <View className="flex-1 pr-3">
-          <Text className="font-body-medium text-small text-cyan-vivid">{formatDayLabel(date)}</Text>
+          <Text className="font-body-medium text-small text-cyan-vivid" numberOfLines={1}>
+            {formatDayLabel(date)}
+            {!!day.name && (
+              <Text className="font-body-medium text-small text-primary-light dark:text-primary"> · {day.name}</Text>
+            )}
+          </Text>
           {!expanded && (
             <Text className="mt-0.5 font-body text-small text-secondary-light dark:text-secondary" numberOfLines={1}>
               {preview || 'No exercises added yet'}

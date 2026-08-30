@@ -7,6 +7,7 @@ import { Text, View } from 'react-native';
 import { Card } from '@/components/ui/Card';
 import { ConfettiBurst } from '@/components/ui/ConfettiBurst';
 import { Button } from '@/components/ui/Button';
+import { ExerciseTimerModal } from '@/components/features/routine/ExerciseTimerModal';
 import { FinishDayModal } from '@/components/features/routine/FinishDayModal';
 import { RoutineExercisePreviewRow } from '@/components/features/routine/RoutineExercisePreviewRow';
 import { useTodayDayCompletion } from '@/hooks/useTodayDayCompletion';
@@ -18,6 +19,7 @@ interface TodaysRoutineSectionProps {
   day: RoutineDay | null;
   completedIds: Set<string>;
   onToggleComplete: (exerciseId: string) => void;
+  onCompleteExercise: (exerciseId: string) => void;
   onDayFinished: () => void;
 }
 
@@ -25,25 +27,47 @@ function Separator() {
   return <View className="h-px bg-border-light dark:bg-border" />;
 }
 
+// "Today's Workout" (the section title above the card) says what this is;
+// this says what today's specific day is called (e.g. "Chest Day") — only
+// shown when the day actually has a name, since it's optional.
+function DayNameHeader({ name }: { name: string | null }) {
+  if (!name) return null;
+  return (
+    <View className="w-full gap-3 pb-1">
+      <Text className="font-body-medium text-small text-secondary-light dark:text-secondary">{name}</Text>
+      <Separator />
+    </View>
+  );
+}
+
 // Replaces the old scheduled_date TodaysWorkoutSection — sourced from the
 // active routine's day matching today's weekday instead. No single "Start
 // Workout" button any more — each exercise starts (or gets checked off) on
 // its own, and a Finish Day button below the list wraps the whole day up
 // once every exercise is checked.
-export function TodaysRoutineSection({ routineId, day, completedIds, onToggleComplete, onDayFinished }: TodaysRoutineSectionProps) {
+export function TodaysRoutineSection({
+  routineId,
+  day,
+  completedIds,
+  onToggleComplete,
+  onCompleteExercise,
+  onDayFinished,
+}: TodaysRoutineSectionProps) {
   const router = useRouter();
   const { isComplete: isDayComplete, isLoading: isDayCompletionLoading, complete } = useTodayDayCompletion();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [timingExercise, setTimingExercise] = useState<RoutineExercise | null>(null);
 
   if (!day || day.is_rest_day) {
     return (
       <Card className="items-center gap-2 py-8">
+        <DayNameHeader name={day?.name ?? null} />
         <Feather name="moon" size={22} color="#A0A0A8" />
         <Text className="font-display text-h3 text-primary-light dark:text-primary">Rest day</Text>
         <Text className="text-center font-body text-small text-secondary-light dark:text-secondary">
-          {day?.notes || 'Nothing scheduled for today — recover and come back stronger.'}
+          Nothing scheduled for today — recover and come back stronger.
         </Text>
       </Card>
     );
@@ -52,6 +76,7 @@ export function TodaysRoutineSection({ routineId, day, completedIds, onToggleCom
   if (day.exercises.length === 0) {
     return (
       <Card className="items-center gap-2 py-8">
+        <DayNameHeader name={day.name} />
         <Feather name="edit-3" size={22} color="#A0A0A8" />
         <Text className="font-display text-h3 text-primary-light dark:text-primary">Training day, no exercises yet</Text>
         <Text className="text-center font-body text-small text-secondary-light dark:text-secondary">
@@ -89,6 +114,7 @@ export function TodaysRoutineSection({ routineId, day, completedIds, onToggleCom
 
   return (
     <Card style={{ position: 'relative' }}>
+      <DayNameHeader name={day.name} />
       <View style={{ minHeight: day.exercises.length * 52 }}>
         <FlashList
           data={day.exercises}
@@ -98,6 +124,7 @@ export function TodaysRoutineSection({ routineId, day, completedIds, onToggleCom
               isCompleted={completedIds.has(item.id)}
               onToggleComplete={() => onToggleComplete(item.id)}
               onStartLiveReview={() => startLiveReview(item)}
+              onStartTimer={() => setTimingExercise(item)}
             />
           )}
           keyExtractor={(item) => item.id}
@@ -127,6 +154,13 @@ export function TodaysRoutineSection({ routineId, day, completedIds, onToggleCom
         isSubmitting={isFinishing}
         onCancel={() => setConfirmOpen(false)}
         onConfirm={handleConfirm}
+      />
+
+      <ExerciseTimerModal
+        visible={!!timingExercise}
+        exercise={timingExercise}
+        onClose={() => setTimingExercise(null)}
+        onComplete={() => timingExercise && onCompleteExercise(timingExercise.id)}
       />
 
       <ConfettiBurst play={showConfetti} />

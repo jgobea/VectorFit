@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import { useIsFocused } from '@react-navigation/native';
 import { Redirect, Tabs } from 'expo-router';
 import { useColorScheme } from 'nativewind';
 import { ActivityIndicator } from 'react-native';
@@ -21,6 +22,14 @@ export default function AppLayout() {
   const theme = Colors[colorScheme === 'light' ? 'light' : 'dark'];
   const isLiveReviewActive = useUiStore((s) => s.isLiveReviewActive);
   const onboardingStatus = useOnboardingGate(session?.user.id);
+  // This whole Tabs group stays mounted underneath full-screen routes pushed
+  // on top of it (e.g. routine-builder, outside the group) — react-navigation
+  // keeps prior stack screens alive for gesture-back. Without gating on
+  // focus, tabBarHideOnKeyboard's keyboard listener kept firing there too,
+  // animating the hidden tab bar in response to a keyboard it can't even
+  // see, which read as an empty gray bar flashing at the bottom of those
+  // other screens.
+  const isTabsFocused = useIsFocused();
 
   if (!session) {
     return <Redirect href="/(auth)/login" />;
@@ -52,8 +61,10 @@ export default function AppLayout() {
         // keyboard opens, which starves Chat's KeyboardAvoidingView of the
         // room it needs on Android and hides the message input behind the
         // keyboard. Hiding the bar whenever the keyboard is up fixes that
-        // everywhere a screen has a text field near the bottom edge.
-        tabBarHideOnKeyboard: true,
+        // everywhere a screen has a text field near the bottom edge — but
+        // only while this Tabs group is actually the focused route (see
+        // isTabsFocused above).
+        tabBarHideOnKeyboard: isTabsFocused,
       }}
     >
       <Tabs.Screen

@@ -22,7 +22,7 @@ export default function DashboardScreen() {
   const router = useRouter();
   const { greeting, quote, profile, stats, isRefreshing, onRefresh, error } = useDashboard();
   const { routine, isLoading: isRoutineLoading, reload: reloadRoutine } = useRoutine();
-  const { completedIds, toggle: toggleExerciseComplete } = useTodayCompletions();
+  const { completedIds, toggle: toggleExerciseComplete, complete: completeExercise } = useTodayCompletions();
 
   // Dashboard is a Tabs screen — it stays mounted, so returning from the
   // routine builder (a separate pushed route) needs an explicit refetch to
@@ -44,7 +44,7 @@ export default function DashboardScreen() {
     // 'bottom' dropped from edges: the Tabs bar below this screen already
     // covers the bottom safe-area inset — adding it here double-pads.
     <SafeAreaView className="flex-1 bg-background-light dark:bg-background" edges={['top']}>
-      <DashboardHeader greeting={greeting} />
+      <DashboardHeader greeting={greeting} avatarUrl={profile?.avatar_url ?? null} />
 
       <ScrollView
         contentContainerClassName="gap-section pb-12"
@@ -54,7 +54,11 @@ export default function DashboardScreen() {
         <View className="gap-section px-6">
           {error && <Text className="font-body text-small text-error">{error}</Text>}
 
-          <StatsSummaryCard stats={stats} todaysLoadKg={todaysLoadKg} />
+          <StatsSummaryCard
+            stats={stats}
+            todaysLoadKg={todaysLoadKg}
+            goalWorkoutsPerWeek={profile?.workout_frequency_days ?? 3}
+          />
 
           {!isRoutineLoading && !routine && <NoRoutineState />}
 
@@ -78,6 +82,7 @@ export default function DashboardScreen() {
                   day={todaysDay}
                   completedIds={completedIds}
                   onToggleComplete={toggleExerciseComplete}
+                  onCompleteExercise={completeExercise}
                   onDayFinished={handleRefresh}
                 />
               </View>

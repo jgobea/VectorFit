@@ -4,4 +4,5 @@ export interface DashboardStats {
   workoutsThisWeek: number;
   streakDays: number;
   personalBestFormScore: number | null;
+  todaysActiveMinutes: number;
 }

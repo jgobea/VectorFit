@@ -21,6 +21,7 @@ export interface RoutineDay {
   routine_id: string;
   day_of_week: number;
   is_rest_day: boolean;
+  name: string | null;
   notes: string | null;
   exercises: RoutineExercise[];
 }

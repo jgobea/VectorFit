@@ -7,7 +7,6 @@ interface RoutineState {
   isLoading: boolean;
   error: string | null;
   setRoutine: (routine: Routine | null) => void;
-  patchRoutine: (patch: Partial<Pick<Routine, 'name'>>) => void;
   patchDay: (dayId: string, patch: Partial<RoutineDay>) => void;
   setDayExercises: (dayId: string, exercises: RoutineExercise[]) => void;
   patchExercise: (exerciseId: string, patch: Partial<RoutineExercise>) => void;
@@ -24,7 +23,6 @@ export const useRoutineStore = create<RoutineState>((set) => ({
   isLoading: true,
   error: null,
   setRoutine: (routine) => set({ routine }),
-  patchRoutine: (patch) => set((state) => (state.routine ? { routine: { ...state.routine, ...patch } } : state)),
   patchDay: (dayId, patch) =>
     set((state) => {
       if (!state.routine) return state;

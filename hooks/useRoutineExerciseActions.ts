@@ -8,6 +8,7 @@ import type { Exercise } from '@/types/workout';
 const DEFAULT_SETS = 1;
 const DEFAULT_REPS = 10;
 const DEFAULT_REST_SECONDS = 60;
+const DEFAULT_DURATION_SECONDS = 30;
 
 // Exercise-level mutations within a routine day: add/remove, edit
 // sets/reps/weight/rest, and reorder. Add/remove/reorder wait for the
@@ -23,6 +24,7 @@ export function useRoutineExerciseActions() {
       const day = routine?.days.find((d) => d.id === dayId);
       if (!day) return;
 
+      const isTimeBased = exercise.measurement_type === 'time';
       const { data } = await supabase
         .from('routine_exercises')
         .insert({
@@ -30,7 +32,8 @@ export function useRoutineExerciseActions() {
           exercise_id: exercise.id,
           order_index: day.exercises.length,
           sets: DEFAULT_SETS,
-          reps: DEFAULT_REPS,
+          reps: isTimeBased ? null : DEFAULT_REPS,
+          duration_seconds: isTimeBased ? DEFAULT_DURATION_SECONDS : null,
           rest_seconds: DEFAULT_REST_SECONDS,
         })
         .select('*, exercise:exercises (*)')
@@ -44,7 +47,7 @@ export function useRoutineExerciseActions() {
   const updateExercise = useCallback(
     async (
       exerciseRowId: string,
-      patch: Partial<Pick<RoutineExercise, 'sets' | 'reps' | 'weight_kg' | 'rest_seconds' | 'icon'>>
+      patch: Partial<Pick<RoutineExercise, 'sets' | 'reps' | 'weight_kg' | 'duration_seconds' | 'rest_seconds' | 'icon'>>
     ) => {
       patchExercise(exerciseRowId, patch);
       await supabase.from('routine_exercises').update(patch).eq('id', exerciseRowId);
@@ -65,27 +68,32 @@ export function useRoutineExerciseActions() {
     [routine, setDayExercises]
   );
 
-  const moveExercise = useCallback(
-    async (dayId: string, exerciseRowId: string, direction: 'up' | 'down') => {
+  // Drag-and-drop drop handler: caller hands back the exercise row ids in
+  // their new visual order, we assign fresh sequential order_index values
+  // and persist only the rows whose index actually changed.
+  const reorderExercises = useCallback(
+    async (dayId: string, orderedExerciseIds: string[]) => {
       const day = routine?.days.find((d) => d.id === dayId);
       if (!day) return;
-      const index = day.exercises.findIndex((e) => e.id === exerciseRowId);
-      const swapWith = direction === 'up' ? index - 1 : index + 1;
-      if (index === -1 || swapWith < 0 || swapWith >= day.exercises.length) return;
 
-      const reordered = [...day.exercises];
-      const [a, b] = [reordered[index], reordered[swapWith]];
-      reordered[index] = { ...b, order_index: a.order_index };
-      reordered[swapWith] = { ...a, order_index: b.order_index };
+      const byId = new Map(day.exercises.map((e) => [e.id, e]));
+      const reordered = orderedExerciseIds
+        .map((id, index) => {
+          const exercise = byId.get(id);
+          return exercise ? { ...exercise, order_index: index } : null;
+        })
+        .filter((e): e is RoutineExercise => e !== null);
+      if (reordered.length !== day.exercises.length) return;
+
       setDayExercises(dayId, reordered);
 
-      await Promise.all([
-        supabase.from('routine_exercises').update({ order_index: a.order_index }).eq('id', b.id),
-        supabase.from('routine_exercises').update({ order_index: b.order_index }).eq('id', a.id),
-      ]);
+      const changed = reordered.filter((e) => byId.get(e.id)?.order_index !== e.order_index);
+      await Promise.all(
+        changed.map((e) => supabase.from('routine_exercises').update({ order_index: e.order_index }).eq('id', e.id))
+      );
     },
     [routine, setDayExercises]
   );
 
-  return { addExercise, updateExercise, removeExercise, moveExercise };
+  return { addExercise, updateExercise, removeExercise, reorderExercises };
 }

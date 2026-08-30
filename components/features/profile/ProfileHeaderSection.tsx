@@ -14,9 +14,28 @@ interface ProfileHeaderSectionProps {
   onToggleEdit: () => void;
 }
 
+const MONTH_LABELS_LONG = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+// Hand-rolled instead of toLocaleDateString(undefined, { month: 'long' }) —
+// Hermes's Intl support is incomplete for some device locales and was
+// silently dropping the month name. See UpcomingRoutineDayRow.tsx.
 function memberSince(createdAt: string | undefined): string {
   if (!createdAt) return '';
-  return new Date(createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
+  const date = new Date(createdAt);
+  return `${MONTH_LABELS_LONG[date.getMonth()]} ${date.getFullYear()}`;
 }
 
 // DESIGN_SPEC.md §E.1: avatar (tap to change), editable name, member-since
