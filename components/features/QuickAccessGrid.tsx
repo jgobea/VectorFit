@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Card } from '@/components/ui/Card';
 
@@ -11,11 +11,11 @@ interface QuickAccessItem {
   onPress: () => void;
 }
 
-// DESIGN_SPEC.md §B.5: 2x2 grid, icon + label. "View Progress" isn't among
-// INSTRUCTIONS.md's 5 scoped pages — it still responds (not inert), just
-// with an honest "coming soon" instead of a route. "Edit Routine" opens the
-// routine builder (app/routine-builder.tsx), which creates one on the fly
-// if the user doesn't have one yet.
+// DESIGN_SPEC.md §B.5: 2x2 grid, icon + label. "View Progress" opens
+// app/progress.tsx (stats + charts derived from routine_day_completions and
+// pose_sessions). "Edit Routine" opens the routine builder
+// (app/routine-builder.tsx), which creates one on the fly if the user
+// doesn't have one yet.
 //
 // Two explicit flex-1 rows (not a wrapping flex row with % widths): a
 // percentage-width + flex-wrap grid resizes/re-centers unpredictably across
@@ -33,7 +33,7 @@ export function QuickAccessGrid() {
       key: 'progress',
       icon: 'bar-chart-2',
       label: 'View Progress',
-      onPress: () => Alert.alert('Coming soon', 'Progress tracking isn’t built yet.'),
+      onPress: () => router.push('/progress'),
     },
     {
       key: 'routine',
