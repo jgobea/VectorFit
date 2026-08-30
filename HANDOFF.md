@@ -8,319 +8,239 @@ disk, gitignored, don't re-derive their contents here.
 
 ## Where things stand
 
-Git: on branch **`chore/expo-sdk-54`** (off `master`). Committed locally as
-`910c4e3`, **not yet pushed** — the user hasn't asked for a push this round.
-**Still not merged to `master`** — this has been flagged in every handoff for
-a while now and still hasn't come up; keep raising it.
+Git: **on `master`** now — `chore/expo-sdk-54` was merged (fast-forward, no
+conflicts) and pushed to `github` (the real GitHub remote). This session's own
+work landed as four more commits on top, also pushed to `github`:
+`87c7e67`, `dc2c5c0`, `1899064`, `b016c72`.
 
-Everything below is confirmed working by the user (with one exception,
-flagged loudly) and safe to build on. Read `910c4e3`'s commit message for
-the full file-level "what" — this doc is the "why" and the gotchas.
+There's a second git remote, `origin`, pointing at a **local filesystem
+path** (`C:/Users/david/supa/tesis/VectorFit` — a separate working copy on
+the same machine, not GitHub). Pushing to it fails
+(`! [remote rejected] master -> master (branch is currently checked out)`)
+because that copy has `master` checked out itself — normal git behavior for a
+non-bare repo, not a bug. Only `github` gets pushed; if that other local copy
+needs to catch up, it has to `git pull` on its own.
 
-## Drag-and-drop exercise reorder
+## Gotcha worth its own paragraph: `npx expo install <pkg>` can silently break another package
 
-`components/features/routine/DraggableExerciseList.tsx` — replaced the
-up/down chevrons in the routine builder with real drag-and-drop, built on
-Reanimated + Gesture Handler (both already linked natively — used elsewhere
-in the app — so this needed no prebuild).
+Installing `expo-audio` this session bumped `expo-asset` (a transitive dep,
+not something we depend on directly) to `57.0.15` — nothing close to what
+Expo SDK 54 actually ships (`expo-asset@~12.0.13`, per
+`node_modules/expo/bundledNativeModules.json`). `expo-audio`'s own
+`package.json` just has a loose/unpinned range on `expo-asset` that npm
+resolved to latest-on-npm instead of SDK-compatible. Compiled fine (`BUILD
+SUCCESSFUL`), then crashed on launch:
+`NoClassDefFoundError: Lexpo/modules/kotlin/types/AnyTypeCache` — a class
+that only exists in a much newer `expo-modules-core` than SDK 54 ships,
+because the mismatched `expo-asset` was compiled against one.
 
-**This took three attempts before it was right — worth reading if you touch
-this file.** All three are relevant if something regresses here:
+Fixed with an npm `overrides` entry pinning `expo-asset` to `~12.0.13`
+project-wide (see `package.json`). **After installing any new
+`expo-*` package, run `npm ls <suspicious-transitive-dep>` and diff against
+`bundledNativeModules.json` before assuming the install is clean** — a
+successful Gradle build does not mean the versions are compatible; this one
+built fine and crashed instantly on open.
 
-1. First attempt: every row absolutely positioned, offsets computed from a
-   shared `heights` map populated via each row's own `onLayout`. Bug: rows
-   overlapped on first open and never self-corrected — turned out
-   `useDerivedValue`'s automatic dependency tracking didn't reliably
-   propagate through the nested `offsetForPosition` helper reading a
-   *different* item's height. Switched to `useAnimatedReaction`.
-2. Still visibly stuck. Root cause was actually a render-time read of
-   `positions.value`/`heights.value` while initializing a shared value
-   (Reanimated strict-mode flags this, and it wasn't as harmless as it
-   looked). Fixed, but a bigger bug surfaced next.
-3. Real bug: dragging item 1 down in a 3-item list rocketed it to the
-   bottom. Cause: `translateY.value = e.translationY` every `onUpdate` frame
-   overwrote the previous frame's `-= steps * slot` correction, because
-   `e.translationY` is cumulative-since-gesture-start, not a per-frame
-   delta — so a single slot-crossing kept re-firing every frame instead of
-   once. Fixed with a `consumed` accumulator that persists across the whole
-   gesture.
+## Native deps added this session
 
-**Final, working architecture**: rows stay in normal flex flow always (Yoga
-owns steady-state stacking — impossible to desync, unlike hand-computed
-absolute offsets). Reordering mutates a plain `order: string[]` React state
-array; `layout={LinearTransition.springify()}` animates the resulting
-reflow for passive rows. Only the actively-dragged row gets pulled out
-visually via `translateY` (raw, unquantized, always 1:1 with the finger) —
-it also renders a dashed "after image" placeholder in its own flex slot
-while dragging, and floats the real card above it. The dragged row's own
-`layout` transition is disabled while active (`isDragging` state) — letting
-Yoga's own reflow-tween fight the manual `translateY` compensation at the
-same time is what caused the "cuts/jerky" complaint before this.
+- **`expo-audio`** — a short "ding" (`assets/sounds/rep_beep.wav`, synthesized
+  locally, not downloaded) plays on every rep QuickPose counts, in
+  `hooks/usePoseSession.ts`.
+- **`expo-speech`** — reads the Live Review coach note aloud (see below) if
+  the user has Voice Feedback on in Profile. `users.ai_voice_feedback_enabled`
+  / `ai_voice_volume` existed in the schema since the very first migration
+  but nothing consumed them until now.
+- Both needed a real native rebuild (`npx expo run:android`) — Metro alone
+  isn't enough for a new native module, same as any earlier native addition.
+- **`react-native-gifted-charts`** (for the new Progress page, below) is
+  *not* in this category — it's pure JS/SVG (`react-native-svg`, already
+  linked), no native code of its own. Hot-reloaded fine.
 
-## Time-based exercises
+## New: Live Review AI coach feedback
 
-Custom exercises can now be measured by duration instead of reps/weight —
-e.g. a 30s plank, either counting down to a target or counting up freely.
+`supabase/functions/live-review-feedback/` (new Edge Function, separate from
+`chat` — single-shot, not persisted to `chat_messages`). Deployed live.
 
-- `exercises.measurement_type` (`'reps' | 'time'`) + `exercises.time_mode`
-  (`'countdown' | 'stopwatch'`, only meaningful when time-based) —
-  `supabase/migrations/20260829000000_time_based_exercises.sql`. Set via a
-  toggle in the "add your own exercise" flow
-  (`components/features/ExercisePickerModal.tsx`).
-- `routine_exercises.duration_seconds` already existed in the schema from
-  the original routines migration (nobody had wired it up yet) — no new
-  column needed there.
-- `components/features/routine/ExerciseTimerModal.tsx` — a guided timer
-  reached via a clock button in Today's Workout
-  (`RoutineExercisePreviewRow.tsx`, alongside the manual check and, for
-  QuickPose exercises, the camera button — mutually exclusive with the
-  camera since a user-created exercise can never claim `quickpose_feature`).
-  Walks every set + the rest between them (not just the first set), then
-  marks the exercise done via the same `routine_exercise_completions` table
-  Live Review and the manual check use (`useTodayCompletions.ts` grew a
-  `complete()` — always-marks-done, unlike `toggle()`). Closing mid-set (or
-  mid-rest) now asks for confirmation via the shared `ConfirmModal` first —
-  don't let that regress back to a silent discard.
-- Today's load-volume stat on the Dashboard already excludes time-based
-  exercises correctly with zero extra code — `reps`/`weight_kg` are `null`
-  for them and the formula already does `?? 0`.
+- **The form score is not a quality signal — don't feed it to a coach
+  prompt.** `QuickPoseThresholdCounter`'s driving value sweeps 0→100→0 every
+  single rep by design (it's a range-of-motion/completion metric, not
+  correctness), so an "average form score" stays high even with bad form.
+  The actual per-rep quality signal QuickPose exposes is its `feedbacks[...]`
+  *strings* (e.g. "keep your back straight") — `usePoseSession.ts` now tal
+  lies how often each distinct string fires per set and sends the top 5 to
+  the coach.
+- **Camera-framing feedback ("stay in frame", "step back", "keep both arms
+  visible") fires very often even when the person is clearly fully visible**
+  (confirmed: reps still counted correctly) — almost certainly a tracking-
+  confidence artifact, not a real problem. The system prompt explicitly
+  tells the model to treat this category as noise: never lead with it, skip
+  it entirely if any genuine form correction also fired that set, only
+  mention it if it's the *sole* thing that fired *and* reps came in well
+  under target.
+- The request carries `isWorkoutComplete` so the prompt doesn't say "for
+  your next set" after the workout (or an early Stop) actually ended — that
+  bug shipped once and was reported before this fix.
+- Fires on every set end now, not just inter-set rest — `finishWorkout` (not
+  only `finishSet`) requests a note too, so single-set exercises and the
+  final set (neither of which have a rest period) still get one, shown on
+  the redesigned `SessionSummaryModal` (now a centered, bigger dialog instead
+  of a small bottom sheet).
+- `LiveReviewBottomPanel`'s "no feedback this frame" fallback text no longer
+  reads as a tracking failure once tracking has actually started — QuickPose
+  sending nothing means "nothing to fix," not "I can't see you." (This was
+  the user's literal on-screen text, confirmed by asking them to read it
+  back — worth remembering as a diagnostic technique: when a live SDK's
+  behavior is in question, get the *exact* on-screen string before theorizing.)
 
-## Per-day routine naming (replaces the old single routine name)
+## New: Progress page (`app/progress.tsx`)
 
-**User-directed architecture change**: each day of the week now has its own
-name (`routine_days.name`, migration
-`20260829060000_routine_day_names.sql`) instead of one name for the whole
-`routines` row. Monday can be "Chest Day", Tuesday "Triceps Day", etc. —
-edited per-day in `RoutineDayEditor.tsx`, shown in Today's Workout and
-Upcoming.
+Wired up Home's "View Progress" tile, previously a "coming soon" stub.
+Lifetime stats, a 14-day consistency strip, weekly workout-frequency + form-
+score-trend charts, and a training-focus donut by body area
+(`hooks/useProgressStats.ts`, from `routine_day_completions` +
+`pose_sessions` — the same real sources Dashboard/Profile use, nothing new).
 
-- `routines.name` column is still in the DB (still gets `'My Routine'` at
-  creation) but is **fully dead** now, same precedent as the `workouts`
-  table — nothing reads or writes it anymore. `RoutineBuilderHeader.tsx` is
-  now a static "Weekly Routine" title, no editable field.
-- **Copy-day already existed** (`DayMenu.tsx` → `CopyDayModal.tsx` →
-  `useRoutineDayActions.copyDay`) — this wasn't new work, just discovered
-  while doing this. It now also copies the day's name, per explicit user
-  choice (asked directly: exercises+name vs. exercises-only).
-- Removed the rest-day "Note (optional)" field entirely (`RestDayPanel.tsx`,
-  `setDayNotes` action) — explicit user ask, not a refactor side-effect.
-  `routine_days.notes` column is still there (dead) but nothing writes it
-  from the UI now.
-- The day-name `TextInput` commits on an effect **cleanup**, not just
-  `onBlur` — switching days (or leaving the screen) with the field still
-  focused used to silently drop whatever was typed. The cleanup fires with
-  whatever's in a `nameDraftRef` at that moment, so it can't miss a pending
-  edit the way blur-only commits could.
+**gifted-charts gotcha**: `actualContainerWidth = width + yAxisLabelWidth`
+(default `yAxisLabelWidth` is 35) — passing the card's full available width
+as `width` overflows the card by 35px on the right. Subtract it. Also: week
+labels need to be short ("8/24", not "Aug 24") or they truncate to "Aug…" —
+there isn't a separate x-axis-label-width prop to widen, only the bar/
+spacing geometry controls how much room each label gets.
 
-## Routine builder: Done vs. back
+## New: Terms & Privacy + signup validation
 
-**User-directed change, reverses the earlier "always autosave" design**
-noted in the prior handoff. Per-field writes still autosave immediately
-exactly as before (unchanged mechanism) — but now, leaving via the back
-arrow or Android's hardware back **reverts** everything changed since the
-screen opened, with a confirmation prompt if anything actually differs from
-a snapshot taken on entry. Only "Done" keeps edits.
+- `app/terms.tsx` + `content/legalContent.ts` — a reading screen linked from
+  Login and required (checkbox) before Sign Up can submit. The root
+  `terminos_y_privacidad.md` is kept as the human-editable source (it has
+  Google-Docs-export artifacts, `\#`/`\*\*`, not meant to render as-is) —
+  `content/legalContent.ts` is a hand-ported clean copy; there's no build
+  step syncing them, so **edit both if the legal text changes**.
+- Signup now has the same inline email/password validation as Login
+  (`EMAIL_REGEX`, min-6-char password, confirm-match), shown on blur.
 
-- `app/routine-builder.tsx`: `snapshotRef` captures `routine.days` (deep
-  clone) once, the first time it loads. `hasChanges()` fingerprints each day
-  and diffs against the snapshot. `BackHandler` is wired so Android's
-  hardware back goes through the same confirm-or-silently-leave path as the
-  header's arrow, not the default stack-pop.
-- `useRoutineDayActions.revertToSnapshot()` — for each day that actually
-  differs, restores `name`/`is_rest_day`, then delete-then-reinserts that
-  day's `routine_exercises` **with their original ids** (so add / remove /
-  reorder / field-edits / icon changes all undo in one shot via the same
-  mechanism). Only touched days are reverted, to limit collateral damage
-  (see next point) — untouched days aren't re-written at all.
-- **Known caveat, not fully solved**: `routine_exercise_completions` has
-  `on delete cascade` from `routine_exercise_id`. If a day being reverted
-  had an exercise checked off *today* before the edit session started,
-  discarding still cascade-deletes that completion row (delete-then-reinsert
-  restores the exercise row with the same id, but the completion row itself
-  is already gone by then — re-inserting the parent doesn't resurrect it).
-  Edge case, flagged rather than solved — a real fix would need a
-  diff-based revert instead of delete-all-then-reinsert per touched day.
-- Custom exercises created via the picker while editing are **never**
-  reverted — creating a catalog exercise is treated as a permanent, separate
-  action from this routine's edit session, not part of the draft.
+## Removed: Profile's Preferences section
 
-## Chat personalization + model
+Workout types / session length / preferred time / rest days — nothing read
+or wrote these (onboarding never collected them either). Deleted the
+component and dropped the matching four columns from `public.users` via
+`supabase/migrations/20260830100000_drop_unused_profile_preferences.sql`,
+already applied live. If you're looking for where a user's workout-type
+preference lives, it doesn't — that idea was fully removed, not renamed.
 
-- `language_preference` is now read into the system prompt
-  (`buildProfileContext()` in `supabase/functions/chat/index.ts`) with an
-  explicit "reply in X" instruction — not just listed as background
-  context, since a personalization *fact* and a *behavioral instruction* are
-  different asks of the model. Deployed live.
-- Model switched `gemini-flash-latest` → `gemini-flash-lite-latest` — higher
-  free-tier daily quota, less exposed to the demand-related 503s that were
-  showing up in Edge Function logs. Also deployed live.
+## Profile edit mode: sticky footer + discard confirmation
 
-## Dashboard
+Cancel/Save Changes now sit in a footer that stays visible while scrolling
+(the page had gotten long) instead of scrolling away right after the header.
+`useProfile.ts` grew `hasUnsavedChanges` (plain `JSON.stringify(draft) !==
+JSON.stringify(profile)` — every field is a primitive now that Preferences'
+array fields are gone, so this is reliable without a per-field diff). Cancel,
+the header's pencil/X toggle, and Android's hardware back all route through
+one `requestCancel()` that only shows the discard-confirmation modal when
+something actually changed.
 
-- Header's profile link now shows the user's `avatar_url` inside the circle
-  frame instead of always the placeholder icon (`DashboardHeader.tsx`).
-- **"Best form score" replaced with "Today's active time"** — the old stat
-  saturated at 100 almost immediately (QuickPose's score is closer to
-  binary correct/incorrect per rep than a real 0–100 scale) and was
-  useless. New stat sums today's `pose_sessions` durations. Fixed a real bug
-  while at it: `usePoseSession.ts`'s insert never set `started_at`
-  explicitly, so it defaulted to `now()` at insert time — landing within
-  milliseconds of `ended_at` and making every session's duration read as
-  ~0. Now captured via a ref at session mount. Old sessions (before this
-  fix) still have bogus near-zero durations; nothing retroactive was done
-  about that.
-- "Workouts this week" now shows `X/goal` (goal = `workout_frequency_days`)
-  instead of a bare count — matches the pattern `AchievementSection` already
-  used.
+## Bottom tab bar: floating pill (`app/(app)/_layout.tsx`)
 
-## Smaller fixes this session
+Changed from an edge-to-edge bar to a floating rounded pill, in three
+iterations — **read this before touching `tabBarStyle` again**:
 
-- Sets can no longer be left blank or below 1 — `CompactNumberField` grew a
-  `required` prop that snaps back to `min` on blur instead of leaving `null`
-  committed (typing/backspacing mid-edit still works; only the *committed*
-  value is guaranteed non-empty).
-- 7-day selector (`DaySelector.tsx`) is `flex-1` per chip now instead of a
-  horizontally-scrolling fixed-width row — all 7 days visible without a
-  swipe (Saturday was getting cut off).
-- `UpcomingRoutineList.tsx` dropped `FlashList` for a plain mapped list —
-  rows expand/collapse and rest days are shorter than workout days, so a
-  guessed fixed row height either left empty space or clipped content.
-- Hand-rolled weekday/month formatting
-  (`UpcomingRoutineDayRow.formatDayLabel`, `ProfileHeaderSection.memberSince`)
-  instead of `toLocaleDateString(undefined, {...})` — Hermes's `Intl`
-  support is incomplete for some device locales and was silently dropping
-  the month name (reported: "jue, 3 de" with nothing after "de"). If you see
-  another spot using `toLocaleDateString` with a `month` option, it has the
-  same latent bug.
-- `stores/uiStore.ts`'s `applyTheme()` now also calls
-  `SystemUI.setBackgroundColorAsync()` (native root window background was
-  never set, defaulting to Android's own theme default) — a real gap, not
-  just theoretical, though it didn't turn out to be the fix for the
-  bottom-of-screen gray box below.
-- `app/(app)/_layout.tsx`'s `tabBarHideOnKeyboard` now gates on
-  `useIsFocused()` — it was firing (and animating the hidden tab bar)
-  whenever a keyboard opened on *any* screen stacked on top of the Tabs
-  group, like the routine builder, since react-navigation keeps that
-  navigator mounted underneath for gesture-back. This was a real, confirmed
-  bug worth keeping fixed regardless of the next item.
+1. First attempt: `marginHorizontal`/`marginBottom`/`borderRadius` on
+   `tabBarStyle` *without* `position: 'absolute'`. Looked rounded but left a
+   plain dark-gray rectangle in the gutter around the pill — that reserved-
+   space container belongs to React Navigation internally and isn't
+   recolorable via `tabBarStyle`.
+2. Switched to `position: 'absolute'`, which removes that reserved-space
+   container entirely (the pill now floats directly over each screen's own
+   background). This requires every `Tabs.Screen`'s scrollable content to
+   pad its own bottom via `useBottomTabBarHeight()` — otherwise the last
+   content item (or, on Chat, the message input itself) ends up hidden
+   behind the pill. Also surfaced: the pill's own internal bottom padding
+   (React Navigation adds `insets.bottom` inside the bar unconditionally)
+   made its rounded background tall enough to visually extend into the
+   phone's own 3-button nav row.
+3. Final fix: `safeAreaInsets={{ bottom: 0 }}` on `<Tabs>` itself (a
+   Navigator-level prop, not inside `screenOptions`) zeroes out that
+   internal padding; the real inset is applied exactly once, to the pill's
+   own `bottom` position (`insets.bottom + 6`), via `useSafeAreaInsets()`.
+   Zeroing that inset also made the bar's *height* fall back to Navigation's
+   bare default (49px, `TABBAR_HEIGHT_UIKIT` in their source) — set an
+   explicit `height: 68` to compensate, since a custom `height` in
+   `tabBarStyle` fully overrides their calculation.
+
+Every `Tabs.Screen` (`dashboard.tsx`, `chat.tsx`, `profile.tsx`,
+`LiveReviewSetup.tsx`) now does `useBottomTabBarHeight() + useSafeAreaInsets
+().bottom + <gap>` for its bottom padding — both halves are needed since the
+height hook no longer includes the inset. If you add a fifth tab screen (or
+a new scrollable section on an existing one), copy this pattern.
 
 ## Known unresolved bug: gray box at the bottom of the screen on keyboard open/close
 
-**Reported by the user in the routine builder, not fixed despite three
-attempts this session — flagged loudly so the next session doesn't repeat
-the same dead ends.** Symptom (with screenshots): after the keyboard
-opens/closes while editing a text field, an empty gray rectangle sits at
-the bottom of the screen, roughly where the bottom nav area is, without any
-icons in it. User's own theory (plausible, not confirmed): it's the app's
-*own* bottom tab bar — still mounted underneath the routine builder (which
-is outside the `(app)` Tabs group) — reacting to the keyboard and animating
-even though it's not visually reachable.
+**Carried forward from the previous handoff, still not fixed, not
+revisited this session.** Reported in the routine builder: an empty gray
+rectangle appears at the bottom of the screen after the keyboard opens/
+closes, roughly where a nav bar would be. Three prior fix attempts (native
+window background color, `SafeAreaView` bottom edge, gating
+`tabBarHideOnKeyboard` on focus) didn't resolve it — full history is in git
+log around commit `9c0548a` if it's picked back up.
 
-Tried, in order, **none of which fixed it**:
-1. `SystemUI.setBackgroundColorAsync` on the native window — kept (real gap
-   worth having regardless) but didn't touch this bug.
-2. Adding `'bottom'` to the routine builder's `SafeAreaView` `edges` — user
-   said it looked the same, not doubled (an earlier read of their feedback
-   mis-parsed this as "made it worse" — it didn't, it just didn't help).
-   Reverted back to `edges={['top']}` anyway since it wasn't the fix.
-3. Gating `tabBarHideOnKeyboard` on `useIsFocused()` (see above) — this is a
-   real, independently-justified fix and was kept, but the user reported the
-   gray box was still there after it, so it either isn't the cause or isn't
-   the *only* cause.
+**Worth knowing before the next attempt**: the bottom tab bar's whole
+positioning model changed this session (in-flow → floating/absolute, see
+above). That could plausibly change this bug's behavior or root cause
+entirely — don't assume the old investigation's conclusions still apply
+without re-observing it first. Get a screenshot with the keyboard actually
+*open* (not before/after) — that's the one thing that would distinguish
+"our own tab bar" from "Android's own 3-button nav bar transition," and it
+was never captured.
 
-**User's explicit instruction: leave it alone for now, don't keep
-guessing.** If picked back up, get a screenshot with the keyboard actually
-*open* (not before/after) first — every screenshot so far has been of the
-before/after state, not mid-keyboard, which is the one thing that would
-distinguish "tab bar ghost" from "Android's own 3-button nav bar
-show/hide transition" (a system compositor behavior on edge-to-edge apps
-that may not be fixable from app code at all without `expo-navigation-bar`,
-a new native dependency requiring a prebuild).
-
-## Decisions carried forward from earlier sessions (still true)
+## Decisions carried forward (still true)
 
 - **NativeWind `className`-no-op footgun** — `Animated.View` and
-  `KeyboardAvoidingView` are the two known cases. `className` silently does
-  nothing on either; layout classes go on a plain nested `View`/child,
-  `style` on the component itself.
-- **Android keyboard avoidance needs explicit `behavior={Platform.OS ===
-  'ios' ? 'padding' : 'height'}`**, never `undefined` for Android — SDK 54's
-  edge-to-edge default breaks the classic `windowSoftInputMode="adjustResize"`
-  idiom.
-- **`react-native-web` `ScrollView` defaults to `flexGrow: 1`** — any
-  horizontal `ScrollView` inside a flex column on web needs explicit
-  `grow-0 shrink-0` (+ ideally `max-h-*`) or it silently expands.
-- **No third-party Markdown library** — hand-rolled in `lib/markdown.ts` +
-  `components/ui/Markdown.tsx`.
-- **Expo Go cannot run Live Review at all** — `@quickpose/react-native`
-  ships real native code. Everything else still works in Expo Go.
-- **Any new native dependency or `app.json` native-identity change needs
-  `npx expo prebuild --clean` before `expo run:android`.** Everything this
-  session (drag-and-drop, timer, per-day naming, discard/revert) was pure
-  JS/TS + migrations — no native changes, all hot-reloaded fine.
-- **User-generated-content freedom over admin-curated lists** — from the
-  custom-exercises correction a few sessions back. This session's per-day
-  naming / copy-day work is in the same spirit: don't assume a fixed
-  structure when the user can reasonably want to customize it further.
+  `KeyboardAvoidingView` don't register `className`; layout classes go on a
+  nested plain `View`, `style` on the component itself.
+- **Android keyboard avoidance needs explicit
+  `behavior={Platform.OS === 'ios' ? 'padding' : 'height'}`**, never
+  `undefined` — SDK 54's edge-to-edge default breaks
+  `windowSoftInputMode="adjustResize"`.
+- **`routine_exercise_completions` cascade-delete-on-revert caveat** (routine
+  builder's Done-vs-back snapshot/revert) — still real, still not fixed, low
+  priority. See prior handoff history if it ever actually bites someone.
+- **Expo Go cannot run Live Review** — `@quickpose/react-native` ships real
+  native code.
+- **User verifies pages themselves** via the running dev server, never a
+  screenshot report from Claude.
 
 ## Environment quirks (so you don't re-debug them)
 
+- **After any `npm install` (including `npx expo install`), restart Metro
+  with `--clear`.** A Metro instance that was already running when
+  `node_modules` changed underneath it throws stale
+  `Unable to resolve "./someFile"` bundling errors for files that actually
+  exist on disk — looks like a real missing-file bug, isn't one. Came up
+  twice this session.
 - **Windows doesn't reliably kill the whole `expo start` process tree** —
-  check `Get-NetTCPConnection -LocalPort 8081 -State Listen` →
-  `Stop-Process -Id <pid> -Force` if port 8081 is stuck. Came up twice this
-  session.
-- **`adb reverse tcp:8081 tcp:8081` drops on USB re-enumeration** — re-run
-  it (or `npx expo run:android` if the APK itself needs reinstalling; a
-  Metro-only restart is enough if the APK is already on the device and
-  nothing native changed).
-- **Reading real Supabase Edge Function logs** needs the Management API's
-  Logflare endpoint, not `database/query`:
-  ```
-  POST https://api.supabase.com/v1/projects/{ref}/analytics/endpoints/logs.all
-  Authorization: Bearer $SUPABASE_ACCESS_TOKEN
-  body: {"sql": "select timestamp, event_message from function_logs order by timestamp desc limit 40",
-         "iso_timestamp_start": "<ISO>", "iso_timestamp_end": "<ISO>"}
-  ```
-  Must pass an explicit timestamp range — omitting it silently returns
-  empty, not an error.
-- **`python3` resolves to a broken Windows Store stub** — use `node -e
-  "..."` one-liners for Management API calls instead.
+  `Get-NetTCPConnection -LocalPort 8081 -State Listen` →
+  `Stop-Process -Id <pid> -Force` if port 8081 is stuck.
+- **`adb reverse tcp:8081 tcp:8081` drops on USB re-enumeration** — re-run it
+  (full adb path this session:
+  `$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe`, not on PATH in the
+  Bash tool's shell).
 - **`.env` has real, working project credentials** — don't ask again.
-  `SUPABASE_ACCESS_TOKEN` isn't in there — separate personal credential,
-  ask fresh each session.
-- **User verifies pages themselves** via the running dev server, not a
-  headless-screenshot report. **Don't take screenshots yourself.**
-- **UIZZE's `ui-radar` is still blocked** (403 from `WebFetch`).
+  `SUPABASE_ACCESS_TOKEN` isn't in there — separate personal credential, ask
+  fresh each session. Project ref: `wyfxwvdzqnylevwypony`.
+- **`python3` resolves to a broken Windows Store stub** — use `node -e "..."`
+  one-liners for Supabase Management API calls instead.
 
 ## Next up
 
-1. **Merge decision**: `chore/expo-sdk-54` → `master` — still pending,
-   still worth raising.
-2. **The gray-box keyboard bug above** — user said leave it for now, but
-   it's unresolved and annoying; worth another pass with a mid-keyboard
-   screenshot when the user's ready.
-3. **Email confirmation is off in production** (`mailer_autoconfirm: true`,
+1. **The gray-box keyboard bug** — unresolved, see above; the tab bar's new
+   floating/absolute positioning may have changed its behavior, worth a
+   fresh look with a mid-keyboard screenshot.
+2. **Email confirmation is off in production** (`mailer_autoconfirm: true`,
    no custom SMTP) — carried forward from earlier handoffs, still
    unaddressed.
-4. **Weight-history graph** (`DESIGN_SPEC.md` §E.2) still not built.
-5. The `routine_exercise_completions` cascade-delete-on-revert caveat
-   (under "Routine builder: Done vs. back" above) — low priority, real, not
-   fixed.
-6. Consider whether `revertToSnapshot`'s per-day
-   delete-then-reinsert-with-original-ids approach should become a real
-   diff-based patch instead, if the completions-cascade caveat ever
-   actually bites someone.
-
-## Suggested skills for the next session
-
-- `supabase` — re-check the security checklist: `exercises.measurement_type`
-  /`time_mode`, `routine_days.name` are new columns since the last check;
-  RLS itself didn't change but worth confirming nothing regressed.
-- `ui-slop-score` / `anti-ui-slop` — the routine builder is now the most
-  interaction-heavy screen in the app (drag-and-drop, per-day naming,
-  discard confirmation, copy-day) and still hasn't had this pass.
-- `handoff` — if the next session also runs long, produce another one (read
-  `~/.claude/.agents/skills/handoff/SKILL.md` directly, not invokable via
-  the `Skill` tool). This project's convention is a single living
-  `HANDOFF.md` at the repo root (git-tracked), not the skill's generic
-  temp-directory default.
+3. **Weight-history graph** (`DESIGN_SPEC.md` §E.2) — still not built; the
+   new Progress page covers workout/form-score trends but not this.
+4. The `routine_exercise_completions` cascade-delete-on-revert caveat, and
+   whether `revertToSnapshot` should become diff-based instead — still
+   pending, low priority.
+5. `origin` (the local-path git remote) is behind — not urgent, but if that
+   other working copy is actually in use, it needs a manual `git pull`.
