@@ -72,5 +72,17 @@ export default function LiveReviewScreen() {
     return <LiveReviewSetup onStart={setConfig} prefill={prefill} />;
   }
 
-  return <LiveReviewWorkout config={config} onExit={() => router.replace('/(app)/dashboard')} />;
+  const handleExit = () => {
+    // Resets config, not just navigating away — the (app) Tabs group keeps
+    // this screen mounted in the background instead of unmounting it on tab
+    // switch, so the isLiveReviewActive-reset effect's cleanup (keyed off
+    // `config`) would otherwise never re-fire and the tab bar would stay
+    // hidden for the rest of the session. Resetting here also means
+    // revisiting the Live Review tab shows the setup screen again instead
+    // of the just-finished camera session.
+    setConfig(null);
+    router.replace('/(app)/dashboard');
+  };
+
+  return <LiveReviewWorkout config={config} onExit={handleExit} />;
 }

@@ -47,13 +47,13 @@ export function NumberStepperField({
   return (
     <View className="gap-2">
       <Text className="font-body-semibold text-small text-secondary-light dark:text-secondary">{label}</Text>
-      <View className="flex-row items-center gap-3">
+      <View className="flex-row items-center gap-2">
         <Pressable
           onPress={decrement}
           disabled={value <= min}
           accessibilityRole="button"
           accessibilityLabel={`Decrease ${label.toLowerCase()}`}
-          className="h-11 w-11 items-center justify-center rounded-xl border border-border-light active:opacity-70 disabled:opacity-30 dark:border-border"
+          className="h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border-light active:opacity-70 disabled:opacity-30 dark:border-border"
         >
           <Feather name="minus" size={18} color="#00E5FF" />
         </Pressable>
@@ -68,7 +68,12 @@ export function NumberStepperField({
           // clips a tall/bold digit against a fixed h-11 box — text-center
           // alone doesn't fix vertical alignment, only horizontal.
           style={{ textAlignVertical: 'center', paddingVertical: 0 }}
-          className="h-11 w-20 rounded-xl border border-border-light text-center font-body-semibold text-body text-primary-light dark:border-border dark:text-primary"
+          // w-20 is a preferred width, not a hard one: min-w-0 + shrink let
+          // it give way to the buttons instead of overflowing them when two
+          // steppers sit side by side on a narrow screen (Live Review's
+          // Reps/Sets row) — the buttons themselves stay shrink-0 so they
+          // never lose their tap target.
+          className="h-10 w-20 min-w-0 shrink rounded-xl border border-border-light text-center font-body-semibold text-body text-primary-light dark:border-border dark:text-primary"
         />
 
         <Pressable
@@ -76,7 +81,7 @@ export function NumberStepperField({
           disabled={value >= max}
           accessibilityRole="button"
           accessibilityLabel={`Increase ${label.toLowerCase()}`}
-          className="h-11 w-11 items-center justify-center rounded-xl border border-border-light active:opacity-70 disabled:opacity-30 dark:border-border"
+          className="h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border-light active:opacity-70 disabled:opacity-30 dark:border-border"
         >
           <Feather name="plus" size={18} color="#00E5FF" />
         </Pressable>

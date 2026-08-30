@@ -44,10 +44,12 @@ export function LiveReviewBottomPanel({
           <Text className="font-display text-h1 text-cyan-vivid">{formScore}</Text>
         </View>
         <View className="items-end">
-          <Text className="font-body-semibold text-body text-primary">
-            Rep {reps} / {targetReps}
+          <Text className="font-body text-small text-secondary">Reps</Text>
+          <Text className="font-display text-h1 text-green-neon">
+            {reps}
+            <Text className="font-body-semibold text-h3 text-secondary"> / {targetReps}</Text>
           </Text>
-          <Text className="font-body text-small text-secondary">
+          <Text className="mt-1 font-body-semibold text-body text-primary">
             Set {currentSet} / {totalSets}
           </Text>
         </View>

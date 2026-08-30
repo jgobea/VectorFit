@@ -60,12 +60,14 @@ export function useProfileStats(userId: string | undefined) {
     if (!userId) return;
     setIsLoading(true);
 
-    const [sessions, poseSessions] = await Promise.all([
-      supabase
-        .from('workout_sessions')
-        .select('started_at, duration_seconds')
-        .eq('user_id', userId)
-        .eq('status', 'completed'),
+    // "Workouts completed" / streak read from routine_day_completions — same
+    // source as useDashboardStats' workoutsThisWeek/streakDays — not the
+    // dead workout_sessions table nothing writes to. "Hours trained" sums
+    // pose_sessions durations, the only place actual elapsed time is
+    // recorded (see hooks/usePoseSession.ts's started_at/ended_at).
+    const [dayCompletions, poseDurations, poseSessions] = await Promise.all([
+      supabase.from('routine_day_completions').select('completed_date').eq('user_id', userId),
+      supabase.from('pose_sessions').select('started_at, ended_at').eq('user_id', userId).not('ended_at', 'is', null),
       supabase
         .from('pose_sessions')
         .select('exercise_id, best_rep_score, exercise:exercises(name)')
@@ -75,12 +77,16 @@ export function useProfileStats(userId: string | undefined) {
         .limit(100),
     ]);
 
-    const completedSessions = sessions.data ?? [];
+    const completions = dayCompletions.data ?? [];
+    const totalSeconds = (poseDurations.data ?? []).reduce((sum, s) => {
+      if (!s.ended_at) return sum;
+      return sum + Math.max(0, (new Date(s.ended_at).getTime() - new Date(s.started_at).getTime()) / 1000);
+    }, 0);
 
     setStats({
-      totalWorkouts: completedSessions.length,
-      totalHours: Math.round((completedSessions.reduce((sum, s) => sum + (s.duration_seconds ?? 0), 0) / 3600) * 10) / 10,
-      longestStreakDays: computeLongestStreak(completedSessions.map((s) => s.started_at)),
+      totalWorkouts: completions.length,
+      totalHours: Math.round((totalSeconds / 3600) * 10) / 10,
+      longestStreakDays: computeLongestStreak(completions.map((c) => c.completed_date)),
       personalRecords: bestPerExercise((poseSessions.data as PoseSessionRow[] | null) ?? []),
     });
     setIsLoading(false);

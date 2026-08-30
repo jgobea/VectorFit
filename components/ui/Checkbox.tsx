@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 
 interface CheckboxProps {
-  label: string;
+  label?: string;
   checked: boolean;
   onToggle: (next: boolean) => void;
 }
@@ -23,7 +23,7 @@ export function Checkbox({ label, checked, onToggle }: CheckboxProps) {
       >
         {checked && <Feather name="check" size={14} color="#1C1C1E" />}
       </View>
-      <Text className="font-body text-body text-secondary-light dark:text-secondary">{label}</Text>
+      {label && <Text className="font-body text-body text-secondary-light dark:text-secondary">{label}</Text>}
     </Pressable>
   );
 }

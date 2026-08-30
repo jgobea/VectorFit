@@ -54,6 +54,12 @@
             "minSdkVersion": 26
           }
         }
+      ],
+      [
+        "expo-audio",
+        {
+          "recordAudioAndroid": false
+        }
       ]
     ],
     "experiments": {

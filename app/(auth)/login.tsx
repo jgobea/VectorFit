@@ -99,7 +99,11 @@ export default function LoginScreen() {
           </View>
 
           <Text className="mt-12 text-center font-body text-small text-secondary-light dark:text-secondary">
-            By continuing you agree to VectorFit&apos;s Terms of Service and Privacy Policy.
+            By continuing you agree to VectorFit&apos;s{' '}
+            <Link href="/terms" className="text-cyan-vivid">
+              Terms of Service and Privacy Policy
+            </Link>
+            .
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>

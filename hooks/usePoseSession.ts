@@ -1,5 +1,6 @@
 import { QuickPoseThresholdCounter } from '@quickpose/react-native';
 import type { QuickPoseUpdateEvent } from '@quickpose/react-native';
+import { useAudioPlayer } from 'expo-audio';
 import { useCallback, useRef, useState } from 'react';
 
 import { toLocalDateKey } from '@/lib/routineSchedule';
@@ -39,6 +40,10 @@ interface SetTally {
 // past the target still gets an accurate rep count.
 export function usePoseSession(config: SessionConfig) {
   const userId = useAuthStore((s) => s.user?.id);
+  // Short "ding" played on every counted rep — see the poseComplete branch
+  // in onUpdate below. require(...) needs a static, relative (not @/-alias)
+  // path for Metro's asset plugin to pick it up.
+  const repSoundPlayer = useAudioPlayer(require('../assets/sounds/rep_beep.wav'));
   const counterRef = useRef(new QuickPoseThresholdCounter());
   const setTalliesRef = useRef<SetTally[]>([]);
   const scoresRef = useRef<number[]>([]);
@@ -69,14 +74,18 @@ export function usePoseSession(config: SessionConfig) {
         setFormScore(score);
         scoresRef.current.push(score);
         counterRef.current.count(value, (state) => {
-          if (state.type === 'poseComplete') setReps(state.count);
+          if (state.type === 'poseComplete') {
+            setReps(state.count);
+            repSoundPlayer.seekTo(0);
+            repSoundPlayer.play();
+          }
         });
       }
 
       setFeedbackText(feedbacks[featureKey] ?? null);
       if (feedbacks[featureKey]) feedbacksRef.current.add(feedbacks[featureKey]);
     },
-    [featureKey, isPaused]
+    [featureKey, isPaused, repSoundPlayer]
   );
 
   // Archives the current set's tally and resets per-set counters — called
