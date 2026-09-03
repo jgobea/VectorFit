@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { streamChatReply } from '@/lib/gemini';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
+import { useChatStore } from '@/stores/chatStore';
 import type { ChatUIMessage } from '@/types/chat';
 
 const HISTORY_LIMIT = 50;
@@ -22,6 +23,7 @@ function toFriendlyError(err: unknown, t: (key: string) => string): string {
 export function useChat() {
   const { t } = useTranslation();
   const userId = useAuthStore((s) => s.user?.id);
+  const clearedAt = useChatStore((s) => s.clearedAt);
   const [messages, setMessages] = useState<ChatUIMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
@@ -52,9 +54,12 @@ export function useChat() {
     // Fetch-on-mount: `load` only sets state after its network call
     // resolves, so this isn't the synchronous-derived-state pattern the
     // react-hooks/set-state-in-effect rule targets — see hooks/useDashboard.ts.
+    // Also re-fires on clearedAt changing — Chat stays mounted in the
+    // background while Profile clears history, so this is the only signal
+    // it gets that its already-loaded messages are gone.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
-  }, [load]);
+  }, [load, clearedAt]);
 
   useEffect(() => {
     return () => abortRef.current?.abort();

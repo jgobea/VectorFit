@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, Text } from 'react-native';
 
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { InfoModal } from '@/components/ui/InfoModal';
 
 interface PrivacySettingsModalProps {
   visible: boolean;
@@ -22,6 +23,7 @@ interface PrivacySettingsModalProps {
 export function PrivacySettingsModal({ visible, isClearing, onClose, onClearChatHistory }: PrivacySettingsModalProps) {
   const { t } = useTranslation();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
 
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
@@ -63,8 +65,18 @@ export function PrivacySettingsModal({ visible, isClearing, onClose, onClearChat
         onCancel={() => setConfirmOpen(false)}
         onConfirm={async () => {
           const success = await onClearChatHistory();
-          if (success) setConfirmOpen(false);
+          if (success) {
+            setConfirmOpen(false);
+            setSuccessOpen(true);
+          }
         }}
+      />
+
+      <InfoModal
+        visible={successOpen}
+        title={t('profile.privacy.clearSuccessTitle')}
+        message={t('profile.privacy.clearSuccessMessage')}
+        onClose={() => setSuccessOpen(false)}
       />
     </Modal>
   );

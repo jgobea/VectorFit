@@ -20,7 +20,15 @@ export function useRoutineExerciseActions() {
   const patchExercise = useRoutineStore((s) => s.patchExercise);
 
   const addExercise = useCallback(
-    async (dayId: string, exercise: Exercise) => {
+    async (
+      dayId: string,
+      exercise: Exercise,
+      // Lets a chat-suggested exercise (hooks/useAddSuggestedExercise.ts)
+      // carry over the AI's own sets/reps/weight/rest instead of always
+      // landing on these blank defaults — any field left out still falls
+      // back to its usual default.
+      overrides?: Partial<Pick<RoutineExercise, 'sets' | 'reps' | 'weight_kg' | 'duration_seconds' | 'rest_seconds'>>
+    ) => {
       const day = routine?.days.find((d) => d.id === dayId);
       if (!day) return;
 
@@ -31,10 +39,11 @@ export function useRoutineExerciseActions() {
           routine_day_id: dayId,
           exercise_id: exercise.id,
           order_index: day.exercises.length,
-          sets: DEFAULT_SETS,
-          reps: isTimeBased ? null : DEFAULT_REPS,
-          duration_seconds: isTimeBased ? DEFAULT_DURATION_SECONDS : null,
-          rest_seconds: DEFAULT_REST_SECONDS,
+          sets: overrides?.sets ?? DEFAULT_SETS,
+          reps: isTimeBased ? null : (overrides?.reps ?? DEFAULT_REPS),
+          weight_kg: overrides?.weight_kg ?? null,
+          duration_seconds: isTimeBased ? (overrides?.duration_seconds ?? DEFAULT_DURATION_SECONDS) : null,
+          rest_seconds: overrides?.rest_seconds ?? DEFAULT_REST_SECONDS,
         })
         .select('*, exercise:exercises (*)')
         .single();
