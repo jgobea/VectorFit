@@ -1,11 +1,13 @@
 import { useTranslation } from 'react-i18next';
-import { Text, View } from 'react-native';
 
+import { ProfileGroup } from '@/components/features/profile/ProfileGroup';
+import { ProfileRow } from '@/components/features/profile/ProfileRow';
 import { ProfileSection } from '@/components/features/profile/ProfileSection';
 import { Input } from '@/components/ui/Input';
 import { LabeledSlider } from '@/components/ui/LabeledSlider';
 import { RadioGroup } from '@/components/ui/RadioGroup';
 import { SelectField } from '@/components/ui/SelectField';
+import { Colors } from '@/constants/theme';
 import { EXPERIENCE_OPTIONS, GOAL_OPTIONS } from '@/constants/profileOptions';
 import type { UserProfile } from '@/types/user';
 
@@ -15,14 +17,7 @@ interface FitnessInfoSectionProps {
   onChange: (patch: Partial<UserProfile>) => void;
 }
 
-function StatRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View className="flex-row items-center justify-between">
-      <Text className="font-body text-body text-secondary-light dark:text-secondary">{label}</Text>
-      <Text className="font-body-semibold text-body text-primary-light dark:text-primary">{value}</Text>
-    </View>
-  );
-}
+const ACCENT = Colors.greenNeon;
 
 export function FitnessInfoSection({ profile, isEditing, onChange }: FitnessInfoSectionProps) {
   const { t } = useTranslation();
@@ -33,27 +28,27 @@ export function FitnessInfoSection({ profile, isEditing, onChange }: FitnessInfo
     const goalLabel = goalOptions.find((o) => o.value === profile.primary_goal)?.label ?? '—';
     const experienceLabel = experienceOptions.find((o) => o.value === profile.experience_level)?.label ?? '—';
     return (
-      <ProfileSection title={t('profile.fitnessInfo.title')}>
-        <StatRow label={t('profile.fitnessInfo.primaryGoal')} value={goalLabel} />
-        <StatRow label={t('profile.fitnessInfo.experienceLevel')} value={experienceLabel} />
-        <StatRow
+      <ProfileGroup title={t('profile.fitnessInfo.title')}>
+        <ProfileRow icon="flag" accentColor={ACCENT} label={t('profile.fitnessInfo.primaryGoal')} value={goalLabel} />
+        <ProfileRow icon="bar-chart" accentColor={ACCENT} label={t('profile.fitnessInfo.experienceLevel')} value={experienceLabel} />
+        <ProfileRow
+          icon="calendar"
+          accentColor={ACCENT}
           label={t('profile.fitnessInfo.workoutFrequency')}
           value={profile.workout_frequency_days ? t('profile.fitnessInfo.timesPerWeek', { n: profile.workout_frequency_days }) : '—'}
         />
-        {profile.injuries_limitations ? (
-          <View className="gap-1">
-            <Text className="font-body text-body text-secondary-light dark:text-secondary">{t('profile.fitnessInfo.injuries')}</Text>
-            <Text className="font-body text-body text-primary-light dark:text-primary">{profile.injuries_limitations}</Text>
-          </View>
-        ) : (
-          <StatRow label={t('profile.fitnessInfo.injuries')} value={t('profile.fitnessInfo.noneNoted')} />
-        )}
-      </ProfileSection>
+        <ProfileRow
+          icon="alert-circle"
+          accentColor={ACCENT}
+          label={t('profile.fitnessInfo.injuries')}
+          value={profile.injuries_limitations || t('profile.fitnessInfo.noneNoted')}
+        />
+      </ProfileGroup>
     );
   }
 
   return (
-    <ProfileSection title={t('profile.fitnessInfo.title')}>
+    <ProfileSection title={t('profile.fitnessInfo.title')} icon="target" accentColor={ACCENT}>
       <SelectField
         label={t('profile.fitnessInfo.primaryGoal')}
         placeholder={t('profile.fitnessInfo.chooseGoal')}

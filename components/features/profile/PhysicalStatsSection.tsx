@@ -1,9 +1,12 @@
 import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 
+import { ProfileGroup } from '@/components/features/profile/ProfileGroup';
+import { ProfileRow } from '@/components/features/profile/ProfileRow';
 import { ProfileSection } from '@/components/features/profile/ProfileSection';
 import { NumberStepperField } from '@/components/ui/NumberStepperField';
 import { RadioGroup } from '@/components/ui/RadioGroup';
+import { Colors } from '@/constants/theme';
 import { BODY_TYPE_OPTIONS, GENDER_OPTIONS } from '@/constants/profileOptions';
 import { cmToFeetInches } from '@/lib/units';
 import type { UserProfile } from '@/types/user';
@@ -14,11 +17,15 @@ interface PhysicalStatsSectionProps {
   onChange: (patch: Partial<UserProfile>) => void;
 }
 
-function StatRow({ label, value }: { label: string; value: string }) {
+const ACCENT = Colors.cyanVivid;
+
+function NumberCell({ value, label }: { value: string; label: string }) {
   return (
-    <View className="flex-row items-center justify-between">
-      <Text className="font-body text-body text-secondary-light dark:text-secondary">{label}</Text>
-      <Text className="font-body-semibold text-body text-primary-light dark:text-primary">{value}</Text>
+    <View className="flex-1 items-center gap-1">
+      <Text className="font-display text-h2" style={{ color: ACCENT }}>
+        {value}
+      </Text>
+      <Text className="text-center font-body text-small text-secondary-light dark:text-secondary">{label}</Text>
     </View>
   );
 }
@@ -32,23 +39,36 @@ export function PhysicalStatsSection({ profile, isEditing, onChange }: PhysicalS
     const genderLabel = genderOptions.find((o) => o.value === profile.gender)?.label ?? '—';
     const bodyTypeLabel = bodyTypeOptions.find((o) => o.value === profile.body_type)?.label ?? '—';
     return (
-      <ProfileSection title={t('profile.physicalStats.title')}>
-        <StatRow label={t('profile.physicalStats.age')} value={profile.age ? `${profile.age}` : '—'} />
-        <StatRow label={t('profile.physicalStats.height')} value={profile.height_cm ? `${profile.height_cm} cm` : '—'} />
-        <StatRow label={t('profile.physicalStats.weight')} value={profile.weight_kg ? `${profile.weight_kg} kg` : '—'} />
-        <StatRow label={t('profile.physicalStats.gender')} value={genderLabel} />
-        <StatRow label={t('profile.physicalStats.bodyType')} value={bodyTypeLabel} />
+      <ProfileGroup title={t('profile.physicalStats.title')}>
+        {/* The three numbers people actually glance at, front and center —
+            same big-number treatment as WorkoutHistorySection — instead of
+            just another label/value row like everything below it. */}
+        <View className="flex-row px-4 py-4">
+          <NumberCell value={profile.age ? `${profile.age}` : '—'} label={t('profile.physicalStats.age')} />
+          <NumberCell
+            value={profile.height_cm ? `${profile.height_cm}` : '—'}
+            label={`${t('profile.physicalStats.height')} (cm)`}
+          />
+          <NumberCell
+            value={profile.weight_kg ? `${profile.weight_kg}` : '—'}
+            label={`${t('profile.physicalStats.weight')} (kg)`}
+          />
+        </View>
+        <ProfileRow icon="user" accentColor={ACCENT} label={t('profile.physicalStats.gender')} value={genderLabel} />
+        <ProfileRow icon="activity" accentColor={ACCENT} label={t('profile.physicalStats.bodyType')} value={bodyTypeLabel} />
         {profile.weight_updated_at && (
-          <Text className="font-body text-small text-secondary-light dark:text-secondary">
-            {t('profile.physicalStats.lastUpdated', { date: new Date(profile.weight_updated_at).toLocaleDateString() })}
-          </Text>
+          <View className="px-4 pb-3 pt-1">
+            <Text className="font-body text-small text-secondary-light dark:text-secondary">
+              {t('profile.physicalStats.lastUpdated', { date: new Date(profile.weight_updated_at).toLocaleDateString() })}
+            </Text>
+          </View>
         )}
-      </ProfileSection>
+      </ProfileGroup>
     );
   }
 
   return (
-    <ProfileSection title={t('profile.physicalStats.title')}>
+    <ProfileSection title={t('profile.physicalStats.title')} icon="activity" accentColor={ACCENT}>
       <View className="flex-row gap-4">
         <View className="flex-1">
           <NumberStepperField

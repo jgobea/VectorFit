@@ -42,20 +42,29 @@ export function ProfileHeaderSection({
 
   return (
     <View className="items-center gap-3 pt-2">
+      {/* overflow-hidden has to live on this inner circle (it's what clips
+          the photo into a circle) — it was on the outer Pressable before,
+          which clipped the camera badge below too, since that badge sits
+          outside the circle's rounded arc even though it's inside the
+          square bounding box. The badge is now a sibling of the circle,
+          absolutely positioned within the (non-clipping) outer Pressable
+          instead, so it renders on top uncut. */}
       <Pressable
         onPress={onAvatarPress}
         accessibilityRole="button"
         accessibilityLabel={t('profile.header.changePicture')}
-        className="h-24 w-24 items-center justify-center overflow-hidden rounded-full border-2 border-cyan-vivid active:opacity-80"
+        className="h-24 w-24 active:opacity-80"
       >
-        {isUploadingAvatar ? (
-          <ActivityIndicator color="#00E5FF" />
-        ) : profile?.avatar_url ? (
-          <Image source={{ uri: profile.avatar_url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
-        ) : (
-          <Feather name="user" size={40} color="#00E5FF" />
-        )}
-        <View className="absolute bottom-0 right-0 h-7 w-7 items-center justify-center rounded-full bg-cyan-vivid">
+        <View className="h-24 w-24 items-center justify-center overflow-hidden rounded-full border-2 border-cyan-vivid">
+          {isUploadingAvatar ? (
+            <ActivityIndicator color="#00E5FF" />
+          ) : profile?.avatar_url ? (
+            <Image source={{ uri: profile.avatar_url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+          ) : (
+            <Feather name="user" size={40} color="#00E5FF" />
+          )}
+        </View>
+        <View className="absolute bottom-0 right-0 h-7 w-7 items-center justify-center rounded-full border-2 border-background-light bg-cyan-vivid dark:border-background">
           <Feather name="camera" size={14} color="#1C1C1E" />
         </View>
       </Pressable>

@@ -5,17 +5,20 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LegalText } from '@/components/features/legal/LegalText';
-import { TERMS_AND_PRIVACY } from '@/content/legalContent';
+import { TERMS_AND_PRIVACY_EN, TERMS_AND_PRIVACY_ES } from '@/content/legalContent';
+import { useLocaleStore } from '@/stores/localeStore';
 
 // Outside both (auth) and (app) route groups — same precedent as
 // app/routine-builder.tsx: a read-only screen reached via router.push, no
 // tab bar, reachable pre-login (from login.tsx) as well as while signed in.
-// Note: only this screen's chrome is translated — the legal text itself
-// (content/legalContent.ts) stays English-only; translating a real
-// Terms/Privacy document is a legal task, not a UI one.
+// Follows the app's UI language (LanguageSwitch/localeStore), not the AI
+// trainer's separate language_preference — same distinction as everywhere
+// else the two could be confused.
 export default function TermsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
+  const locale = useLocaleStore((s) => s.locale);
+  const content = locale === 'es' ? TERMS_AND_PRIVACY_ES : TERMS_AND_PRIVACY_EN;
 
   return (
     <SafeAreaView className="flex-1 bg-background-light dark:bg-background" edges={['top']}>
@@ -33,7 +36,7 @@ export default function TermsScreen() {
       </View>
 
       <ScrollView contentContainerClassName="gap-3 px-6 pb-10 pt-4">
-        <LegalText content={TERMS_AND_PRIVACY} />
+        <LegalText content={content} />
       </ScrollView>
     </SafeAreaView>
   );

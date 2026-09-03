@@ -1,10 +1,12 @@
 // Rendered by app/terms.tsx via components/features/legal/LegalText.tsx, which
 // understands a small markdown subset: "### " headings, "* " bullets, and
-// **bold** inline spans. Source of truth is terminos_y_privacidad.md at the
-// project root (the raw file has stray "#"/"\" artifacts from a Google Docs
-// export and isn't meant to be rendered as-is) — when that document changes,
-// port the wording changes into this cleaned-up copy by hand.
-export const TERMS_AND_PRIVACY = `
+// **bold** inline spans. The Spanish version's source of truth is
+// terminos_y_privacidad.md at the project root (the raw file has stray
+// "#"/"\" artifacts from a Google Docs export and isn't meant to be rendered
+// as-is) — when that document changes, port the wording changes into
+// TERMS_AND_PRIVACY_ES by hand, and keep TERMS_AND_PRIVACY_EN in sync with it
+// (a translation, not an independently-maintained document).
+export const TERMS_AND_PRIVACY_ES = `
 ### Términos de Servicio y Política de Privacidad
 
 **Última actualización:** Agosto 2026
@@ -52,6 +54,59 @@ Tienes el derecho total de acceder, rectificar o eliminar tus datos en cualquier
 ### 5. Contacto
 
 Si tienes preguntas sobre estos términos o deseas solicitar la eliminación de tu cuenta, contáctanos en:
+
+vectorFit@yopmail.com
+`.trim();
+
+// Translation of TERMS_AND_PRIVACY_ES above — keep the two in sync by hand.
+export const TERMS_AND_PRIVACY_EN = `
+### Terms of Service and Privacy Policy
+
+**Last updated:** August 2026
+
+Welcome. By downloading, installing, or using our mobile fitness application (the "App"), you agree to be bound by these Terms of Service and Privacy Policy. If you do not agree to these terms, do not use the App.
+
+### PART 1: TERMS OF SERVICE
+
+### 1. Medical and Health Disclaimer
+
+* **Informational Content:** The App provides exercise routines and movement analysis for strictly informational and educational purposes. It does not constitute medical advice, diagnosis, or professional treatment.
+* **Medical Consultation Required:** We recommend consulting a doctor or health professional before starting any training program, especially if you have a history of injuries, heart conditions, or chronic pain.
+* **Assumption of Risk:** Use of the App and performing the exercises is done entirely at your own risk. The App's creators are not responsible for any physical injury, harm to health, or medical complication arising from the exercise routines shown or evaluated.
+
+### 2. Limits of the Visual Analysis Technology
+
+* **Not a Perfect Guide:** The App uses the device's camera to assist with form correction and rep counting through local, automated algorithms.
+* **No Guarantees:** This feature is an automated assistance tool and can make accuracy errors due to lighting, camera angle, or clothing. It never replaces the supervision of a certified personal trainer or human physical therapist.
+
+### PART 2: PRIVACY POLICY
+
+### 1. Information We Collect (Data Minimization)
+
+We're committed to protecting your privacy by collecting only the data strictly necessary to run your account:
+
+* **Email Address:** The only personal data stored on our external servers. Used exclusively for creating your account, authenticating you, and account recovery.
+
+### 2. Camera Use and Fully Local Processing
+
+* **On-Device Processing:** The App requests camera access solely to analyze your form and performance in real time during exercises.
+* **Total Video Privacy:** All image processing and AI runs **100% locally** on your mobile device's own processor.
+* **No Storage or Transmission:** Video frames, images, or camera feeds are **NEVER saved on the phone, NEVER transmitted to external servers over the internet, and NEVER seen by any human staff**. Once an exercise's analysis is finished, the visual data in temporary memory is destroyed immediately.
+
+### 3. Sharing Data with Third Parties
+
+We do not sell, trade, or transfer your email address to advertisers or any other third party. Your information is never used for commercial tracking.
+
+### 4. Your Rights and Data Deletion
+
+You have the full right to access, correct, or delete your data at any time:
+
+* **Revoking Permissions:** You can disable camera access immediately from your phone's native privacy settings (iOS / Android).
+* **Account Deletion:** You can request permanent deletion of your email address from our database by messaging the contact email at the bottom of this document.
+
+### 5. Contact
+
+If you have questions about these terms or want to request your account's deletion, contact us at:
 
 vectorFit@yopmail.com
 `.trim();

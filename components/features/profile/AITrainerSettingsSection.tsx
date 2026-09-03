@@ -1,11 +1,13 @@
 import { useTranslation } from 'react-i18next';
-import { Text, View } from 'react-native';
 
+import { ProfileGroup } from '@/components/features/profile/ProfileGroup';
+import { ProfileRow } from '@/components/features/profile/ProfileRow';
 import { ProfileSection } from '@/components/features/profile/ProfileSection';
 import { LabeledSlider } from '@/components/ui/LabeledSlider';
 import { RadioGroup } from '@/components/ui/RadioGroup';
 import { SelectField } from '@/components/ui/SelectField';
 import { ToggleRow } from '@/components/ui/ToggleRow';
+import { Colors } from '@/constants/theme';
 import { COACHING_STYLE_OPTIONS, INTENSITY_LABEL_KEYS, INTENSITY_LEVELS } from '@/constants/profileOptions';
 import type { UserProfile } from '@/types/user';
 
@@ -14,6 +16,8 @@ interface AITrainerSettingsSectionProps {
   isEditing: boolean;
   onChange: (patch: Partial<UserProfile>) => void;
 }
+
+const ACCENT = Colors.warning;
 
 // This is the AI trainer's own reply language — separate from the app's UI
 // language (LanguageSwitch, stores/localeStore.ts). A user can read the app
@@ -26,15 +30,6 @@ const LANGUAGE_OPTIONS = [
   { value: 'pt' as const, label: 'options.language.pt' },
 ];
 
-function StatRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View className="flex-row items-center justify-between">
-      <Text className="font-body text-body text-secondary-light dark:text-secondary">{label}</Text>
-      <Text className="font-body-semibold text-body text-primary-light dark:text-primary">{value}</Text>
-    </View>
-  );
-}
-
 export function AITrainerSettingsSection({ profile, isEditing, onChange }: AITrainerSettingsSectionProps) {
   const { t } = useTranslation();
   const languageOptions = LANGUAGE_OPTIONS.map((o) => ({ ...o, label: t(o.label) }));
@@ -44,20 +39,27 @@ export function AITrainerSettingsSection({ profile, isEditing, onChange }: AITra
     const languageLabel = languageOptions.find((o) => o.value === profile.language_preference)?.label ?? profile.language_preference;
     const styleLabel = coachingStyleOptions.find((o) => o.value === profile.ai_coaching_style)?.label;
     return (
-      <ProfileSection title={t('profile.aiSettings.title')}>
-        <StatRow label={t('profile.aiSettings.feedbackIntensity')} value={t(INTENSITY_LABEL_KEYS[profile.ai_feedback_intensity])} />
-        <StatRow
+      <ProfileGroup title={t('profile.aiSettings.title')}>
+        <ProfileRow
+          icon="sliders"
+          accentColor={ACCENT}
+          label={t('profile.aiSettings.feedbackIntensity')}
+          value={t(INTENSITY_LABEL_KEYS[profile.ai_feedback_intensity])}
+        />
+        <ProfileRow
+          icon="volume-2"
+          accentColor={ACCENT}
           label={t('profile.aiSettings.voiceFeedback')}
           value={profile.ai_voice_feedback_enabled ? t('profile.aiSettings.onPercent', { n: profile.ai_voice_volume }) : t('profile.aiSettings.off')}
         />
-        <StatRow label={t('profile.aiSettings.language')} value={languageLabel} />
-        <StatRow label={t('profile.aiSettings.coachingStyle')} value={styleLabel ?? '—'} />
-      </ProfileSection>
+        <ProfileRow icon="globe" accentColor={ACCENT} label={t('profile.aiSettings.language')} value={languageLabel ?? '—'} />
+        <ProfileRow icon="smile" accentColor={ACCENT} label={t('profile.aiSettings.coachingStyle')} value={styleLabel ?? '—'} />
+      </ProfileGroup>
     );
   }
 
   return (
-    <ProfileSection title={t('profile.aiSettings.title')}>
+    <ProfileSection title={t('profile.aiSettings.title')} icon="cpu" accentColor={ACCENT}>
       <LabeledSlider
         label={t('profile.aiSettings.feedbackIntensity')}
         value={INTENSITY_LEVELS.indexOf(profile.ai_feedback_intensity)}
