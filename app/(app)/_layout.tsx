@@ -1,8 +1,10 @@
 import { Feather } from '@expo/vector-icons';
+import { PlatformPressable } from '@react-navigation/elements';
 import { useIsFocused } from '@react-navigation/native';
 import { Redirect, Tabs } from 'expo-router';
 import { useColorScheme } from 'nativewind';
-import { ActivityIndicator } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { ActivityIndicator, Text } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
@@ -31,6 +33,21 @@ export default function AppLayout() {
   // see, which read as an empty gray bar flashing at the bottom of those
   // other screens.
   const isTabsFocused = useIsFocused();
+  const { t } = useTranslation();
+
+  // react-navigation's own tab label (@react-navigation/elements' Label)
+  // hardcodes numberOfLines={1} with no prop to override it — longer
+  // translations (e.g. "Revisión en vivo") were getting cut off with an
+  // ellipsis instead of wrapping. A custom tabBarLabel replaces that
+  // built-in Text entirely, letting these actually wrap onto a second line.
+  const renderTabLabel = (title: string) => ({ color }: { color: string }) => (
+    <Text
+      numberOfLines={2}
+      style={{ color, fontFamily: 'Inter-Medium', fontSize: 11, lineHeight: 13, textAlign: 'center' }}
+    >
+      {title}
+    </Text>
+  );
 
   if (!session) {
     return <Redirect href="/(auth)/login" />;
@@ -95,6 +112,17 @@ export default function AppLayout() {
               shadowOffset: { width: 0, height: 4 },
             },
         tabBarLabelStyle: { fontFamily: 'Inter-Medium', fontSize: 11 },
+        // The library's own per-tab button hardcodes justifyContent:
+        // 'flex-start' (@react-navigation/bottom-tabs' BottomTabItem,
+        // styles.tabVerticalUiKit) — fine at its own default ~49px height,
+        // but our taller 68px pill left icon+label packed against the top
+        // with empty space below instead of centered. No prop exposes that
+        // directly, so this overrides the button's own style array (which
+        // arrives via props.style) with a centered one, same content
+        // otherwise untouched.
+        tabBarButton: (props) => (
+          <PlatformPressable {...props} style={[props.style, { justifyContent: 'center' }]} />
+        ),
         // Without this, the tab bar keeps its reserved footer space when the
         // keyboard opens, which starves Chat's KeyboardAvoidingView of the
         // room it needs on Android and hides the message input behind the
@@ -107,25 +135,39 @@ export default function AppLayout() {
     >
       <Tabs.Screen
         name="dashboard"
-        options={{ title: 'Home', tabBarIcon: ({ color, size }) => <Feather name="home" size={size} color={color} /> }}
+        options={{
+          title: t('nav.home'),
+          tabBarLabel: renderTabLabel(t('nav.home')),
+          tabBarIcon: ({ color, size }) => <Feather name="home" size={size} color={color} />,
+        }}
       />
       <Tabs.Screen
         name="chat"
         options={{
-          title: 'Trainer',
+          title: t('nav.trainer'),
+          tabBarLabel: renderTabLabel(t('nav.trainer')),
           tabBarIcon: ({ color, size }) => <Feather name="message-circle" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="live-review"
         options={{
-          title: 'Live Review',
+          title: t('nav.liveReview'),
+          // Short form just for the tab bar's tight column — "Revisión en
+          // vivo" pushed the icon up even with 2-line wrapping enabled;
+          // the full name is still used everywhere else (top bar, quick
+          // access grid, etc).
+          tabBarLabel: renderTabLabel(t('nav.liveReviewShort')),
           tabBarIcon: ({ color, size }) => <Feather name="camera" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
-        options={{ title: 'Profile', tabBarIcon: ({ color, size }) => <Feather name="user" size={size} color={color} /> }}
+        options={{
+          title: t('nav.profile'),
+          tabBarLabel: renderTabLabel(t('nav.profile')),
+          tabBarIcon: ({ color, size }) => <Feather name="user" size={size} color={color} />,
+        }}
       />
     </Tabs>
   );

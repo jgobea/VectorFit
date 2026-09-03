@@ -1,5 +1,6 @@
 import { Redirect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, BackHandler, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -17,6 +18,7 @@ import type { RoutineDay } from '@/types/routine';
 // bar. createIfMissing means both the empty-state "Create Routine" button
 // and the "Edit Routine" quick-access tile can point here unconditionally.
 export default function RoutineBuilderScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const session = useAuthStore((s) => s.session);
   const { routine, isLoading } = useRoutine({ createIfMissing: true });
@@ -105,9 +107,9 @@ export default function RoutineBuilderScreen() {
 
       <ConfirmModal
         visible={confirmDiscardOpen}
-        title="Discard changes?"
-        message="You've made changes since opening this screen. Going back without Done will undo them."
-        confirmLabel="Discard"
+        title={t('common.discardChangesTitle')}
+        message={t('routineBuilder.discardMessage')}
+        confirmLabel={t('common.discard')}
         destructive
         isSubmitting={isReverting}
         onConfirm={confirmDiscard}

@@ -1,5 +1,6 @@
 import { Link, Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -19,6 +20,7 @@ const MIN_PASSWORD_LENGTH = 6;
 // ui-radar/ui-slop-score/anti-ui-slop per-page workflow.
 export default function SignUpScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -34,10 +36,9 @@ export default function SignUpScreen() {
   const isPasswordValid = password.length >= MIN_PASSWORD_LENGTH;
   const doPasswordsMatch = password === confirmPassword;
 
-  const emailError = emailTouched && !isEmailValid ? 'Enter a valid email address' : undefined;
-  const passwordError =
-    passwordTouched && !isPasswordValid ? `Password must be at least ${MIN_PASSWORD_LENGTH} characters` : undefined;
-  const confirmError = confirmTouched && !doPasswordsMatch ? 'Passwords do not match' : undefined;
+  const emailError = emailTouched && !isEmailValid ? t('signup.emailError') : undefined;
+  const passwordError = passwordTouched && !isPasswordValid ? t('signup.passwordError', { min: MIN_PASSWORD_LENGTH }) : undefined;
+  const confirmError = confirmTouched && !doPasswordsMatch ? t('signup.confirmError') : undefined;
 
   const canSubmit = isEmailValid && isPasswordValid && doPasswordsMatch && acceptedTerms && !isSubmitting;
 
@@ -69,20 +70,20 @@ export default function SignUpScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView contentContainerClassName="flex-grow justify-center px-6" keyboardShouldPersistTaps="handled">
           <Text className="mb-8 text-center text-h2 font-display text-primary-light dark:text-primary">
-            Create your account
+            {t('signup.title')}
           </Text>
 
           {success ? (
             <View className="gap-section">
               <Text className="text-center font-body text-body text-primary-light dark:text-primary">
-                Check your email to confirm your account, then log in.
+                {t('signup.successMessage')}
               </Text>
-              <Button label="Back to Login" onPress={() => router.replace('/(auth)/login')} />
+              <Button label={t('signup.backToLogin')} onPress={() => router.replace('/(auth)/login')} />
             </View>
           ) : (
             <View className="gap-section">
               <Input
-                label="Email"
+                label={t('login.email')}
                 value={email}
                 onChangeText={setEmail}
                 onBlur={() => setEmailTouched(true)}
@@ -94,7 +95,7 @@ export default function SignUpScreen() {
                 placeholder="you@example.com"
               />
               <Input
-                label="Password"
+                label={t('login.password')}
                 value={password}
                 onChangeText={setPassword}
                 onBlur={() => setPasswordTouched(true)}
@@ -103,7 +104,7 @@ export default function SignUpScreen() {
                 placeholder="••••••••"
               />
               <Input
-                label="Confirm Password"
+                label={t('signup.confirmPassword')}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 onBlur={() => setConfirmTouched(true)}
@@ -116,17 +117,17 @@ export default function SignUpScreen() {
                   <Checkbox checked={acceptedTerms} onToggle={setAcceptedTerms} />
                 </View>
                 <Text className="flex-1 font-body text-small text-secondary-light dark:text-secondary">
-                  I&apos;ve read and agree to the{' '}
+                  {t('signup.termsPrefix')}{' '}
                   <Link href="/terms" className="text-cyan-vivid">
-                    Terms of Service and Privacy Policy
+                    {t('login.termsLink')}
                   </Link>
                   .
                 </Text>
               </View>
 
               {error && <Text className="text-center font-body text-small text-error">{error}</Text>}
-              <Button label="Sign Up" onPress={submit} loading={isSubmitting} disabled={!canSubmit} />
-              <Button label="Back to Login" variant="secondary" onPress={() => router.back()} />
+              <Button label={t('login.signUp')} onPress={submit} loading={isSubmitting} disabled={!canSubmit} />
+              <Button label={t('signup.backToLogin')} variant="secondary" onPress={() => router.back()} />
             </View>
           )}
         </ScrollView>

@@ -1,4 +1,5 @@
 import Slider from '@react-native-community/slider';
+import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 
 interface RestSliderProps {
@@ -20,11 +21,12 @@ function formatRest(seconds: number): string {
 // Rest between sets — a slider in 15s steps per explicit user request,
 // switching to a minutes-based label past 60s.
 export function RestSlider({ value, min = 15, max = 300, onChange }: RestSliderProps) {
+  const { t } = useTranslation();
   return (
     <View className="gap-2">
       <View className="flex-row items-center justify-between">
         <Text className="font-body-semibold text-small text-secondary-light dark:text-secondary">
-          Rest between sets
+          {t('liveReview.restBetweenSets')}
         </Text>
         <Text className="font-body-semibold text-body text-primary-light dark:text-primary">{formatRest(value)}</Text>
       </View>

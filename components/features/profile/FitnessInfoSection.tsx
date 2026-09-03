@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 
 import { ProfileSection } from '@/components/features/profile/ProfileSection';
@@ -24,53 +25,60 @@ function StatRow({ label, value }: { label: string; value: string }) {
 }
 
 export function FitnessInfoSection({ profile, isEditing, onChange }: FitnessInfoSectionProps) {
+  const { t } = useTranslation();
+  const goalOptions = GOAL_OPTIONS.map((o) => ({ ...o, label: t(o.label) }));
+  const experienceOptions = EXPERIENCE_OPTIONS.map((o) => ({ ...o, label: t(o.label) }));
+
   if (!isEditing) {
-    const goalLabel = GOAL_OPTIONS.find((o) => o.value === profile.primary_goal)?.label ?? '—';
-    const experienceLabel = EXPERIENCE_OPTIONS.find((o) => o.value === profile.experience_level)?.label ?? '—';
+    const goalLabel = goalOptions.find((o) => o.value === profile.primary_goal)?.label ?? '—';
+    const experienceLabel = experienceOptions.find((o) => o.value === profile.experience_level)?.label ?? '—';
     return (
-      <ProfileSection title="Fitness Information">
-        <StatRow label="Primary goal" value={goalLabel} />
-        <StatRow label="Experience level" value={experienceLabel} />
-        <StatRow label="Workout frequency" value={profile.workout_frequency_days ? `${profile.workout_frequency_days}x / week` : '—'} />
+      <ProfileSection title={t('profile.fitnessInfo.title')}>
+        <StatRow label={t('profile.fitnessInfo.primaryGoal')} value={goalLabel} />
+        <StatRow label={t('profile.fitnessInfo.experienceLevel')} value={experienceLabel} />
+        <StatRow
+          label={t('profile.fitnessInfo.workoutFrequency')}
+          value={profile.workout_frequency_days ? t('profile.fitnessInfo.timesPerWeek', { n: profile.workout_frequency_days }) : '—'}
+        />
         {profile.injuries_limitations ? (
           <View className="gap-1">
-            <Text className="font-body text-body text-secondary-light dark:text-secondary">Injuries / limitations</Text>
+            <Text className="font-body text-body text-secondary-light dark:text-secondary">{t('profile.fitnessInfo.injuries')}</Text>
             <Text className="font-body text-body text-primary-light dark:text-primary">{profile.injuries_limitations}</Text>
           </View>
         ) : (
-          <StatRow label="Injuries / limitations" value="None noted" />
+          <StatRow label={t('profile.fitnessInfo.injuries')} value={t('profile.fitnessInfo.noneNoted')} />
         )}
       </ProfileSection>
     );
   }
 
   return (
-    <ProfileSection title="Fitness Information">
+    <ProfileSection title={t('profile.fitnessInfo.title')}>
       <SelectField
-        label="Primary goal"
-        placeholder="Choose a goal"
+        label={t('profile.fitnessInfo.primaryGoal')}
+        placeholder={t('profile.fitnessInfo.chooseGoal')}
         value={profile.primary_goal}
-        options={GOAL_OPTIONS}
+        options={goalOptions}
         onChange={(primary_goal) => onChange({ primary_goal })}
       />
       <RadioGroup
-        label="Experience level"
+        label={t('profile.fitnessInfo.experienceLevel')}
         value={profile.experience_level}
-        options={EXPERIENCE_OPTIONS}
+        options={experienceOptions}
         onChange={(experience_level) => onChange({ experience_level })}
       />
       <LabeledSlider
-        label="Workout frequency"
+        label={t('profile.fitnessInfo.workoutFrequency')}
         value={profile.workout_frequency_days ?? 3}
         min={1}
         max={7}
         step={1}
-        formatValue={(v) => `${Math.round(v)}x / week`}
+        formatValue={(v) => t('profile.fitnessInfo.timesPerWeek', { n: Math.round(v) })}
         onChange={(v) => onChange({ workout_frequency_days: Math.round(v) })}
       />
       <Input
-        label="Injuries / limitations"
-        placeholder="e.g. lower back sensitivity"
+        label={t('profile.fitnessInfo.injuries')}
+        placeholder={t('profile.fitnessInfo.injuriesPlaceholder')}
         value={profile.injuries_limitations ?? ''}
         onChangeText={(injuries_limitations) => onChange({ injuries_limitations })}
         multiline

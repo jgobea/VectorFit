@@ -1,5 +1,6 @@
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -11,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 // pages, exists only so Login's "Forgot Password?" link isn't a dead end.
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,17 +40,17 @@ export default function ForgotPasswordScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView contentContainerClassName="flex-grow justify-center px-6" keyboardShouldPersistTaps="handled">
           <Text className="mb-8 text-center text-h2 font-display text-primary-light dark:text-primary">
-            Reset your password
+            {t('forgotPassword.title')}
           </Text>
 
           {success ? (
             <Text className="text-center font-body text-body text-primary-light dark:text-primary">
-              If an account exists for that email, a reset link is on its way.
+              {t('forgotPassword.successMessage')}
             </Text>
           ) : (
             <View className="gap-section">
               <Input
-                label="Email"
+                label={t('login.email')}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -56,12 +58,17 @@ export default function ForgotPasswordScreen() {
                 placeholder="you@example.com"
               />
               {error && <Text className="text-center font-body text-small text-error">{error}</Text>}
-              <Button label="Send Reset Link" onPress={submit} loading={isSubmitting} disabled={!email || isSubmitting} />
+              <Button
+                label={t('forgotPassword.submit')}
+                onPress={submit}
+                loading={isSubmitting}
+                disabled={!email || isSubmitting}
+              />
             </View>
           )}
 
           <View className="mt-6">
-            <Button label="Back to Login" variant="secondary" onPress={() => router.back()} />
+            <Button label={t('signup.backToLogin')} variant="secondary" onPress={() => router.back()} />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

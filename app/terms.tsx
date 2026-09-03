@@ -1,5 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -9,8 +10,12 @@ import { TERMS_AND_PRIVACY } from '@/content/legalContent';
 // Outside both (auth) and (app) route groups — same precedent as
 // app/routine-builder.tsx: a read-only screen reached via router.push, no
 // tab bar, reachable pre-login (from login.tsx) as well as while signed in.
+// Note: only this screen's chrome is translated — the legal text itself
+// (content/legalContent.ts) stays English-only; translating a real
+// Terms/Privacy document is a legal task, not a UI one.
 export default function TermsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   return (
     <SafeAreaView className="flex-1 bg-background-light dark:bg-background" edges={['top']}>
@@ -19,12 +24,12 @@ export default function TermsScreen() {
           onPress={() => router.back()}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="Close"
+          accessibilityLabel={t('common.close')}
           className="h-11 w-11 items-center justify-center active:opacity-70"
         >
           <Feather name="x" size={24} color="#00E5FF" />
         </Pressable>
-        <Text className="flex-1 font-display text-h3 text-primary-light dark:text-primary">Terms & Privacy</Text>
+        <Text className="flex-1 font-display text-h3 text-primary-light dark:text-primary">{t('terms.title')}</Text>
       </View>
 
       <ScrollView contentContainerClassName="gap-3 px-6 pb-10 pt-4">

@@ -1,6 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
 
 import { GradientPrimary } from '@/constants/theme';
@@ -17,6 +18,7 @@ const MAX_HEIGHT = 96; // DESIGN_SPEC.md §C.4: grows up to ~3-4 lines.
 // a send button. Sending stays gated behind `disabled` (useChat's
 // isSending) so a reply can't be sent while the previous one is in flight.
 export function ChatInput({ onSend, disabled }: ChatInputProps) {
+  const { t } = useTranslation();
   const [text, setText] = useState('');
   const [height, setHeight] = useState(MIN_HEIGHT);
   const canSend = text.trim().length > 0 && !disabled;
@@ -37,19 +39,19 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           onContentSizeChange={(e) =>
             setHeight(Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, e.nativeEvent.contentSize.height)))
           }
-          placeholder="Ask your trainer..."
+          placeholder={t('chat.inputPlaceholder')}
           placeholderTextColor="#A0A0A8"
           multiline
           style={{ height, maxHeight: MAX_HEIGHT, paddingVertical: 10 }}
           className="font-body text-body text-primary-light dark:text-primary"
-          accessibilityLabel="Message input"
+          accessibilityLabel={t('chat.messageInput')}
         />
       </View>
       <Pressable
         onPress={handleSend}
         disabled={!canSend}
         accessibilityRole="button"
-        accessibilityLabel="Send message"
+        accessibilityLabel={t('chat.sendMessage')}
         className="active:opacity-70 disabled:opacity-40"
       >
         <LinearGradient

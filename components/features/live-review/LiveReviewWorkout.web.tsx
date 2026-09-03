@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
@@ -15,14 +16,14 @@ interface LiveReviewWorkoutProps {
 // native view), so it can't be imported here either — only as a type,
 // which is erased and never reaches the web bundle graph.
 export function LiveReviewWorkout({ config, onExit }: LiveReviewWorkoutProps) {
+  const { t } = useTranslation();
   return (
     <View className="flex-1 items-center justify-center gap-4 bg-background px-6">
-      <Text className="text-center font-display text-h2 text-primary">Live Review isn&apos;t available on web</Text>
+      <Text className="text-center font-display text-h2 text-primary">{t('liveReview.webUnavailableTitle')}</Text>
       <Text className="text-center font-body text-body text-secondary">
-        {config.exercise.name} needs your device&apos;s camera and native pose detection — open this app on your
-        phone to try it.
+        {t('liveReview.webUnavailableMessage', { name: config.exercise.name })}
       </Text>
-      <Button label="Back" variant="secondary" onPress={onExit} />
+      <Button label={t('common.back')} variant="secondary" onPress={onExit} />
     </View>
   );
 }

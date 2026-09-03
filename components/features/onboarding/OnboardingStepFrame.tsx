@@ -1,6 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -40,6 +41,7 @@ export function OnboardingStepFrame({
   onSkip,
   children,
 }: OnboardingStepFrameProps) {
+  const { t } = useTranslation();
   const [skipConfirmOpen, setSkipConfirmOpen] = useState(false);
 
   return (
@@ -50,7 +52,7 @@ export function OnboardingStepFrame({
             onPress={onBack}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="Back"
+            accessibilityLabel={t('common.back')}
             className="h-11 w-11 items-center justify-center active:opacity-70"
           >
             <Feather name="chevron-left" size={24} color="#00E5FF" />
@@ -67,7 +69,7 @@ export function OnboardingStepFrame({
           accessibilityRole="button"
           className="h-11 justify-center px-1"
         >
-          <Text className="font-body-medium text-small text-secondary-light dark:text-secondary">Skip</Text>
+          <Text className="font-body-medium text-small text-secondary-light dark:text-secondary">{t('onboarding.skip')}</Text>
         </Pressable>
       </View>
 
@@ -82,15 +84,20 @@ export function OnboardingStepFrame({
         </ScrollView>
 
         <View className="px-6 pb-4 pt-2">
-          <Button label={isLastStep ? 'Get Started' : 'Next'} loading={isSaving} disabled={!isNextEnabled} onPress={onNext} />
+          <Button
+            label={isLastStep ? t('onboarding.getStarted') : t('common.next')}
+            loading={isSaving}
+            disabled={!isNextEnabled}
+            onPress={onNext}
+          />
         </View>
       </KeyboardAvoidingView>
 
       <ConfirmModal
         visible={skipConfirmOpen}
-        title="Skip setup?"
-        message="Your AI trainer uses this profile to personalize form feedback, workout suggestions, and coaching. Skipping means starting with generic advice — you can always fill it in later from Profile."
-        confirmLabel="Skip Anyway"
+        title={t('onboarding.skipConfirmTitle')}
+        message={t('onboarding.skipConfirmMessage')}
+        confirmLabel={t('onboarding.skipAnyway')}
         destructive
         onCancel={() => setSkipConfirmOpen(false)}
         onConfirm={() => {

@@ -1,5 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 
 import { ExercisePickerModal } from '@/components/features/ExercisePickerModal';
@@ -16,6 +17,7 @@ interface RoutineDayExercisesProps {
 }
 
 export function RoutineDayExercises({ day }: RoutineDayExercisesProps) {
+  const { t } = useTranslation();
   const userId = useAuthStore((s) => s.user?.id);
   const [pickerOpen, setPickerOpen] = useState(false);
   const { exercises, isLoading, error, createCustomExercise, deleteCustomExercise } = useAllExercises();
@@ -49,7 +51,7 @@ export function RoutineDayExercises({ day }: RoutineDayExercisesProps) {
         className="h-14 flex-row items-center justify-center gap-2 rounded-xl border border-dashed border-cyan-vivid/50 active:opacity-70"
       >
         <Feather name="plus" size={18} color="#00E5FF" />
-        <Text className="font-body-semibold text-body text-cyan-vivid">Add Exercise</Text>
+        <Text className="font-body-semibold text-body text-cyan-vivid">{t('routineBuilder.addExercise')}</Text>
       </Pressable>
 
       <ExercisePickerModal

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 
 import type { DayActivity } from '@/types/progressStats';
@@ -10,6 +11,8 @@ interface ActivityStripProps {
 // — a single row of 14 cells would either shrink to illegible squares on a
 // narrow phone or force horizontal scrolling, both against the ask.
 export function ActivityStrip({ days }: ActivityStripProps) {
+  const { t } = useTranslation();
+  const weekdayInitials = t('common.weekdayInitials', { returnObjects: true }) as string[];
   const weeks = [days.slice(0, 7), days.slice(7, 14)];
 
   return (
@@ -25,7 +28,9 @@ export function ActivityStrip({ days }: ActivityStripProps) {
                     : 'border-border-light dark:border-border'
                 } ${day.isToday ? 'border-2 border-cyan-vivid' : ''}`}
               />
-              <Text className="font-body text-small text-secondary-light dark:text-secondary">{day.label}</Text>
+              <Text className="font-body text-small text-secondary-light dark:text-secondary">
+                {weekdayInitials[day.dayOfWeek]}
+              </Text>
             </View>
           ))}
         </View>

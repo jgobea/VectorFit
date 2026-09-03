@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { streamChatReply } from '@/lib/gemini';
 import { supabase } from '@/lib/supabase';
@@ -9,15 +10,17 @@ const HISTORY_LIMIT = 50;
 
 // Network/CORS failures surface as an opaque "Failed to fetch" from the
 // fetch API — not something to show a user. Everything else (Supabase
-// errors, thrown Error messages) is already reasonably worded.
-function toFriendlyError(err: unknown): string {
+// errors, thrown Error messages) is already reasonably worded (and comes
+// straight from Supabase/Gemini, so it isn't translated here).
+function toFriendlyError(err: unknown, t: (key: string) => string): string {
   if (err instanceof TypeError && /fetch/i.test(err.message)) {
-    return "Couldn't reach your trainer — check your connection and try again.";
+    return t('chat.networkError');
   }
-  return err instanceof Error ? err.message : 'Something went wrong — try again.';
+  return err instanceof Error ? err.message : t('common.error');
 }
 
 export function useChat() {
+  const { t } = useTranslation();
   const userId = useAuthStore((s) => s.user?.id);
   const [messages, setMessages] = useState<ChatUIMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -115,14 +118,14 @@ export function useChat() {
         }
       } catch (err) {
         if (controller.signal.aborted) return;
-        setError(toFriendlyError(err));
+        setError(toFriendlyError(err, t));
         setLastFailedMessage(content);
         setMessages((prev) => prev.filter((m) => m.id !== assistantId));
       } finally {
         setIsSending(false);
       }
     },
-    [messages, userId, isSending]
+    [messages, userId, isSending, t]
   );
 
   const retry = useCallback(() => {

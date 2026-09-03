@@ -1,6 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
@@ -30,6 +31,7 @@ function formatTime(totalSeconds: number): string {
 // stopwatch sets (no fixed target) need an explicit "Finish Set" tap. Rest
 // is always a countdown, with a Skip option.
 export function ExerciseTimerModal({ visible, exercise, onClose, onComplete }: ExerciseTimerModalProps) {
+  const { t } = useTranslation();
   const [phase, setPhase] = useState<Phase>('ready');
   const [currentSet, setCurrentSet] = useState(1);
   const [elapsed, setElapsed] = useState(0);
@@ -120,9 +122,9 @@ export function ExerciseTimerModal({ visible, exercise, onClose, onComplete }: E
         >
           <View className="w-full flex-row items-center justify-between">
             <Text className="flex-1 font-display text-h3 text-primary-light dark:text-primary" numberOfLines={1}>
-              {exercise.exercise?.name ?? 'Exercise'}
+              {exercise.exercise?.name ?? t('common.exercise')}
             </Text>
-            <Pressable onPress={requestClose} accessibilityRole="button" accessibilityLabel="Close" hitSlop={8}>
+            <Pressable onPress={requestClose} accessibilityRole="button" accessibilityLabel={t('common.close')} hitSlop={8}>
               <Feather name="x" size={22} color="#A0A0A8" />
             </Pressable>
           </View>
@@ -131,35 +133,35 @@ export function ExerciseTimerModal({ visible, exercise, onClose, onComplete }: E
             <>
               <Feather name="check-circle" size={48} color="#39FF14" />
               <Text className="text-center font-body-semibold text-body text-primary-light dark:text-primary">
-                Nice work — all {totalSets} set{totalSets > 1 ? 's' : ''} done.
+                {t('dashboard.timer.allSetsDone', { sets: totalSets })}
               </Text>
               <View className="w-full">
-                <Button label="Done" onPress={onClose} />
+                <Button label={t('common.done')} onPress={onClose} />
               </View>
             </>
           ) : (
             <>
               <Text className="font-body-semibold text-small text-secondary-light dark:text-secondary">
-                {phase === 'rest' ? 'Rest' : `Set ${currentSet} of ${totalSets}`}
+                {phase === 'rest' ? t('dashboard.timer.rest') : t('dashboard.timer.setOf', { current: currentSet, total: totalSets })}
               </Text>
 
               <Text className="font-display text-h1 text-primary-light dark:text-primary">{display}</Text>
 
               {phase === 'ready' && (
                 <View className="w-full">
-                  <Button label="Start" onPress={() => setPhase('active')} />
+                  <Button label={t('dashboard.timer.start')} onPress={() => setPhase('active')} />
                 </View>
               )}
 
               {phase === 'active' && !isCountdown && (
                 <View className="w-full">
-                  <Button label="Finish Set" onPress={finishActiveSet} />
+                  <Button label={t('dashboard.timer.finishSet')} onPress={finishActiveSet} />
                 </View>
               )}
 
               {phase === 'rest' && (
                 <View className="w-full">
-                  <Button label="Skip Rest" variant="secondary" onPress={finishRest} />
+                  <Button label={t('dashboard.timer.skipRest')} variant="secondary" onPress={finishRest} />
                 </View>
               )}
             </>
@@ -169,9 +171,9 @@ export function ExerciseTimerModal({ visible, exercise, onClose, onComplete }: E
 
       <ConfirmModal
         visible={confirmExitOpen}
-        title="Leave without finishing?"
-        message="You're partway through this exercise — closing now won't mark it as done."
-        confirmLabel="Leave"
+        title={t('dashboard.timer.leaveConfirmTitle')}
+        message={t('dashboard.timer.leaveConfirmMessage')}
+        confirmLabel={t('dashboard.timer.leave')}
         destructive
         onConfirm={confirmExit}
         onCancel={() => setConfirmExitOpen(false)}

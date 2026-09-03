@@ -1,5 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { forwardRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pressable, Text, TextInput, View, type TextInputProps } from 'react-native';
 
 interface InputProps extends TextInputProps {
@@ -15,6 +16,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
   { label, error, isPassword, secureTextEntry, onFocus, onBlur, multiline, ...textInputProps },
   ref
 ) {
+  const { t } = useTranslation();
   const [isFocused, setIsFocused] = useState(false);
   const [isHidden, setIsHidden] = useState(true);
 
@@ -57,7 +59,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
             onPress={() => setIsHidden((v) => !v)}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel={isHidden ? 'Show password' : 'Hide password'}
+            accessibilityLabel={isHidden ? t('common.showPassword') : t('common.hidePassword')}
           >
             <Feather name={isHidden ? 'eye' : 'eye-off'} size={20} color="#A0A0A8" />
           </Pressable>

@@ -1,6 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useColorScheme } from 'nativewind';
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BarChart, LineChart, PieChart } from 'react-native-gifted-charts';
@@ -19,6 +20,17 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Full Body': Colors.error,
 };
 
+// hooks/useProgressStats.ts's CATEGORY_ORDER/UNCATEGORIZED values are the
+// stored/keyed strings (also used above for color lookup) — these map them
+// to display i18n keys without touching that internal shape.
+const CATEGORY_LABEL_KEYS: Record<string, string> = {
+  'Upper Body': 'progress.categories.upperBody',
+  'Lower Body': 'progress.categories.lowerBody',
+  Core: 'progress.categories.core',
+  'Full Body': 'progress.categories.fullBody',
+  Other: 'progress.categories.other',
+};
+
 function StatCell({ value, label }: { value: string; label: string }) {
   return (
     <View className="flex-1 items-center gap-1">
@@ -31,6 +43,7 @@ function StatCell({ value, label }: { value: string; label: string }) {
 // Outside both (auth) and (app) route groups — same precedent as
 // app/terms.tsx: a read-only screen reached via router.push, no tab bar.
 export default function ProgressScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const userId = useAuthStore((s) => s.user?.id);
   const { stats, isLoading } = useProgressStats(userId);
@@ -59,12 +72,12 @@ export default function ProgressScreen() {
           onPress={() => router.back()}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="Back"
+          accessibilityLabel={t('common.back')}
           className="h-11 w-11 items-center justify-center active:opacity-70"
         >
           <Feather name="chevron-left" size={24} color="#00E5FF" />
         </Pressable>
-        <Text className="flex-1 font-display text-h3 text-primary-light dark:text-primary">Your Progress</Text>
+        <Text className="flex-1 font-display text-h3 text-primary-light dark:text-primary">{t('progress.title')}</Text>
       </View>
 
       {isLoading || !stats ? (
@@ -77,9 +90,9 @@ export default function ProgressScreen() {
             <View className="h-16 w-16 items-center justify-center rounded-full bg-cyan-vivid/10">
               <Feather name="bar-chart-2" size={30} color="#00E5FF" />
             </View>
-            <Text className="font-display text-h3 text-primary-light dark:text-primary">Nothing to show yet</Text>
+            <Text className="font-display text-h3 text-primary-light dark:text-primary">{t('progress.empty.title')}</Text>
             <Text className="max-w-xs text-center font-body text-small text-secondary-light dark:text-secondary">
-              Finish a routine day or a Live Review session and your stats and charts will show up here.
+              {t('progress.empty.message')}
             </Text>
           </Card>
         </View>
@@ -87,18 +100,18 @@ export default function ProgressScreen() {
         <ScrollView contentContainerClassName="gap-section px-6 pb-16 pt-4" showsVerticalScrollIndicator={false}>
           <Card>
             <View className="flex-row">
-              <StatCell value={String(stats.totalWorkouts)} label="Workouts" />
-              <StatCell value={`${stats.totalHours}h`} label="Hours trained" />
-              <StatCell value={`${stats.currentStreakDays}d`} label="Current streak" />
-              <StatCell value={`${stats.longestStreakDays}d`} label="Best streak" />
+              <StatCell value={String(stats.totalWorkouts)} label={t('progress.stats.workouts')} />
+              <StatCell value={`${stats.totalHours}h`} label={t('progress.stats.hoursTrained')} />
+              <StatCell value={`${stats.currentStreakDays}d`} label={t('progress.stats.currentStreak')} />
+              <StatCell value={`${stats.longestStreakDays}d`} label={t('progress.stats.bestStreak')} />
             </View>
           </Card>
 
-          <ProgressSection title="Last 14 Days" subtitle="Days you completed a routine">
+          <ProgressSection title={t('progress.last14Days.title')} subtitle={t('progress.last14Days.subtitle')}>
             <ActivityStrip days={stats.last14Days} />
           </ProgressSection>
 
-          <ProgressSection title="Weekly Activity" subtitle="Workouts completed per week">
+          <ProgressSection title={t('progress.weeklyActivity.title')} subtitle={t('progress.weeklyActivity.subtitle')}>
             <BarChart
               data={stats.weeklyWorkouts.map((w) => ({ value: w.count, label: w.weekLabel, frontColor: Colors.cyanVivid }))}
               width={chartWidth}
@@ -120,7 +133,7 @@ export default function ProgressScreen() {
             />
           </ProgressSection>
 
-          <ProgressSection title="Form Score Trend" subtitle="Weekly average from Live Review sessions">
+          <ProgressSection title={t('progress.formScoreTrend.title')} subtitle={t('progress.formScoreTrend.subtitle')}>
             {stats.weeklyFormScore.length > 0 ? (
               <LineChart
                 data={stats.weeklyFormScore.map((w) => ({ value: w.avgFormScore, label: w.weekLabel }))}
@@ -145,12 +158,12 @@ export default function ProgressScreen() {
               />
             ) : (
               <Text className="py-6 text-center font-body text-small text-secondary-light dark:text-secondary">
-                Complete a Live Review session to see this.
+                {t('progress.completeToSee')}
               </Text>
             )}
           </ProgressSection>
 
-          <ProgressSection title="Training Focus" subtitle="Live Review sessions by body area">
+          <ProgressSection title={t('progress.trainingFocus.title')} subtitle={t('progress.trainingFocus.subtitle')}>
             {stats.categoryBreakdown.length > 0 ? (
               <View className="flex-row items-center gap-6">
                 <PieChart
@@ -172,7 +185,7 @@ export default function ProgressScreen() {
                       <View key={c.category} className="flex-row items-center gap-2">
                         <View className="h-3 w-3 rounded-full" style={{ backgroundColor: categoryColor(c.category) }} />
                         <Text className="flex-1 font-body text-small text-primary-light dark:text-primary" numberOfLines={1}>
-                          {c.category}
+                          {t(CATEGORY_LABEL_KEYS[c.category] ?? c.category)}
                         </Text>
                         <Text className="font-body-semibold text-small text-secondary-light dark:text-secondary">
                           {pct}%
@@ -184,7 +197,7 @@ export default function ProgressScreen() {
               </View>
             ) : (
               <Text className="py-6 text-center font-body text-small text-secondary-light dark:text-secondary">
-                Complete a Live Review session to see this.
+                {t('progress.completeToSee')}
               </Text>
             )}
           </ProgressSection>

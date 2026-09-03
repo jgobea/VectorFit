@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Text } from 'react-native';
 
 import { Card } from '@/components/ui/Card';
@@ -14,11 +15,12 @@ interface UpcomingRoutineListProps {
 // expanded rows. This is a handful of items (max 6) inside an already
 // non-scrolling Card, so there's nothing virtualization would buy here.
 export function UpcomingRoutineList({ days }: UpcomingRoutineListProps) {
+  const { t } = useTranslation();
   if (days.length === 0) {
     return (
       <Card className="items-center gap-1 py-6">
         <Text className="font-body text-body text-secondary-light dark:text-secondary">
-          No days scheduled for the rest of the week yet.
+          {t('dashboard.upcoming.empty')}
         </Text>
       </Card>
     );

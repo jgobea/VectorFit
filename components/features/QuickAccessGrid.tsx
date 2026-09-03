@@ -1,5 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 
 import { Card } from '@/components/ui/Card';
@@ -25,20 +26,21 @@ interface QuickAccessItem {
 // affordances across the surface."
 export function QuickAccessGrid() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const items: QuickAccessItem[] = [
-    { key: 'chat', icon: 'message-circle', label: 'Chat with Trainer', onPress: () => router.push('/(app)/chat') },
-    { key: 'live', icon: 'camera', label: 'Live Review', onPress: () => router.push('/(app)/live-review') },
+    { key: 'chat', icon: 'message-circle', label: t('dashboard.quickAccess.chat'), onPress: () => router.push('/(app)/chat') },
+    { key: 'live', icon: 'camera', label: t('nav.liveReview'), onPress: () => router.push('/(app)/live-review') },
     {
       key: 'progress',
       icon: 'bar-chart-2',
-      label: 'View Progress',
+      label: t('dashboard.quickAccess.viewProgress'),
       onPress: () => router.push('/progress'),
     },
     {
       key: 'routine',
       icon: 'edit-3',
-      label: 'Edit Routine',
+      label: t('dashboard.quickAccess.editRoutine'),
       onPress: () => router.push('/routine-builder'),
     },
   ];
@@ -49,9 +51,14 @@ export function QuickAccessGrid() {
     <View className="gap-3">
       {rows.map((row, i) => (
         <View key={i} className="flex-row gap-3">
+          {/* Pressable is flex-1 in a flex-row, so it already stretches to
+              match the tallest sibling (e.g. a 2-line-wrapped label) — Card
+              itself needs flex-1 + justify-center too, or its own box
+              (border/background) stays sized to its own content and
+              visibly falls short of that stretched height. */}
           {row.map((item) => (
             <Pressable key={item.key} onPress={item.onPress} className="flex-1 active:opacity-70">
-              <Card className="items-center gap-2 py-5">
+              <Card className="flex-1 items-center justify-center gap-2 py-5">
                 <Feather name={item.icon} size={22} color="#00E5FF" />
                 <Text className="text-center font-body-semibold text-small text-primary-light dark:text-primary">
                   {item.label}

@@ -1,6 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -39,6 +40,7 @@ export function LiveReviewSetup({ onStart, prefill }: LiveReviewSetupProps) {
   const [restSeconds, setRestSeconds] = useState(60);
   const [infoOpen, setInfoOpen] = useState(false);
   const { exercises, isLoading: isCatalogLoading, error: catalogError } = useExerciseCatalog();
+  const { t } = useTranslation();
   // The tab bar floats (position: 'absolute' in app/(app)/_layout.tsx) now
   // instead of reserving its own space.
   const tabBarHeight = useBottomTabBarHeight();
@@ -78,13 +80,13 @@ export function LiveReviewSetup({ onStart, prefill }: LiveReviewSetupProps) {
           <View className="flex-row items-center justify-between">
             <View className="h-11 w-11" />
             <Text className="flex-1 text-center font-display text-h2 text-primary-light dark:text-primary">
-              Live Review
+              {t('nav.liveReview')}
             </Text>
             <Pressable
               onPress={() => setInfoOpen(true)}
               hitSlop={8}
               accessibilityRole="button"
-              accessibilityLabel="Live Review info"
+              accessibilityLabel={t('liveReview.setup.infoLabel')}
               className="h-11 w-11 items-center justify-center rounded-full border border-border-light active:opacity-70 dark:border-border"
             >
               <Feather name="info" size={18} color="#A0A0A8" />
@@ -92,10 +94,10 @@ export function LiveReviewSetup({ onStart, prefill }: LiveReviewSetupProps) {
           </View>
 
           <View className="gap-2">
-            <Text className="font-body-semibold text-small text-secondary-light dark:text-secondary">Exercise</Text>
+            <Text className="font-body-semibold text-small text-secondary-light dark:text-secondary">{t('liveReview.setup.exercise')}</Text>
             <Card onPress={() => setPickerOpen(true)} className="flex-row items-center justify-between">
               <Text className="font-body-semibold text-body text-primary-light dark:text-primary">
-                {exercise?.name ?? 'Choose an exercise'}
+                {exercise?.name ?? t('liveReview.setup.chooseExercise')}
               </Text>
               <Feather name="chevron-down" size={20} color="#00E5FF" />
             </Card>
@@ -103,17 +105,17 @@ export function LiveReviewSetup({ onStart, prefill }: LiveReviewSetupProps) {
 
           <View className="flex-row gap-4">
             <View className="flex-1">
-              <NumberStepperField label="Reps" value={targetReps} onChange={setTargetReps} />
+              <NumberStepperField label={t('liveReview.setup.reps')} value={targetReps} onChange={setTargetReps} />
             </View>
             <View className="flex-1">
-              <NumberStepperField label="Sets" value={totalSets} onChange={setTotalSets} />
+              <NumberStepperField label={t('liveReview.setup.sets')} value={totalSets} onChange={setTotalSets} />
             </View>
           </View>
 
           <RestSlider value={restSeconds} onChange={setRestSeconds} />
 
           <Button
-            label="Start Workout"
+            label={t('liveReview.setup.startWorkout')}
             disabled={!exercise}
             onPress={() =>
               exercise &&
@@ -143,8 +145,8 @@ export function LiveReviewSetup({ onStart, prefill }: LiveReviewSetupProps) {
 
       <InfoModal
         visible={infoOpen}
-        title="About Live Review"
-        message="Pick an exercise, set your reps, sets, and rest, then start. Your camera tracks your form in real time and your AI trainer coaches you through every rep."
+        title={t('liveReview.setup.aboutTitle')}
+        message={t('liveReview.setup.aboutMessage')}
         onClose={() => setInfoOpen(false)}
       />
     </SafeAreaView>

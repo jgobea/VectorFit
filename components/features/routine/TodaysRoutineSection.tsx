@@ -2,6 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 
 import { Card } from '@/components/ui/Card';
@@ -54,6 +55,7 @@ export function TodaysRoutineSection({
   onDayFinished,
 }: TodaysRoutineSectionProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const { isComplete: isDayComplete, isLoading: isDayCompletionLoading, complete } = useTodayDayCompletion();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
@@ -65,9 +67,9 @@ export function TodaysRoutineSection({
       <Card className="items-center gap-2 py-8">
         <DayNameHeader name={day?.name ?? null} />
         <Feather name="moon" size={22} color="#A0A0A8" />
-        <Text className="font-display text-h3 text-primary-light dark:text-primary">Rest day</Text>
+        <Text className="font-display text-h3 text-primary-light dark:text-primary">{t('dashboard.today.restDayTitle')}</Text>
         <Text className="text-center font-body text-small text-secondary-light dark:text-secondary">
-          Nothing scheduled for today — recover and come back stronger.
+          {t('dashboard.today.restDayMessage')}
         </Text>
       </Card>
     );
@@ -78,9 +80,9 @@ export function TodaysRoutineSection({
       <Card className="items-center gap-2 py-8">
         <DayNameHeader name={day.name} />
         <Feather name="edit-3" size={22} color="#A0A0A8" />
-        <Text className="font-display text-h3 text-primary-light dark:text-primary">Training day, no exercises yet</Text>
+        <Text className="font-display text-h3 text-primary-light dark:text-primary">{t('dashboard.today.emptyDayTitle')}</Text>
         <Text className="text-center font-body text-small text-secondary-light dark:text-secondary">
-          Add exercises to today in your routine to see them here.
+          {t('dashboard.today.emptyDayMessage')}
         </Text>
       </Card>
     );
@@ -137,11 +139,11 @@ export function TodaysRoutineSection({
         {isDayComplete ? (
           <View className="h-14 flex-row items-center justify-center gap-2 rounded-xl bg-green-neon/15">
             <Feather name="check-circle" size={18} color="#39FF14" />
-            <Text className="font-body-semibold text-body text-green-neon">Day Complete!</Text>
+            <Text className="font-body-semibold text-body text-green-neon">{t('dashboard.today.dayComplete')}</Text>
           </View>
         ) : (
           <Button
-            label="Finish Day"
+            label={t('dashboard.today.finishDay')}
             disabled={!allDone || isDayCompletionLoading}
             onPress={() => setConfirmOpen(true)}
           />

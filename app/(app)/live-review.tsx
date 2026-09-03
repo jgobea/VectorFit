@@ -1,6 +1,7 @@
 import * as Device from 'expo-device';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -19,6 +20,7 @@ import { useUiStore } from '@/stores/uiStore';
 const IS_PHYSICAL_DEVICE = Device.isDevice;
 
 export default function LiveReviewScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams<{
     exerciseId?: string;
@@ -57,13 +59,12 @@ export default function LiveReviewScreen() {
     return (
       <SafeAreaView className="flex-1 items-center justify-center gap-4 bg-background-light px-6 dark:bg-background" edges={['top']}>
         <Text className="text-center font-display text-h2 text-primary-light dark:text-primary">
-          Physical Device Required
+          {t('liveReview.deviceRequiredTitle')}
         </Text>
         <Text className="text-center font-body text-body text-secondary-light dark:text-secondary">
-          Live Review uses your camera for real-time pose detection — simulators and emulators don&apos;t have one.
-          Run this build on a real phone to try it.
+          {t('liveReview.deviceRequiredMessage')}
         </Text>
-        <Button label="Back to Dashboard" variant="secondary" onPress={() => router.back()} />
+        <Button label={t('liveReview.backToDashboard')} variant="secondary" onPress={() => router.back()} />
       </SafeAreaView>
     );
   }

@@ -1,6 +1,6 @@
+import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 
-import { DAY_LABELS_SHORT } from '@/types/routine';
 import type { RoutineDay } from '@/types/routine';
 
 interface DaySelectorProps {
@@ -16,6 +16,8 @@ interface DaySelectorProps {
 // training day with exercises, amber = training day still empty, gray =
 // rest day — a quick-glance status read of the week.
 export function DaySelector({ days, selectedDayId, onSelect }: DaySelectorProps) {
+  const { t } = useTranslation();
+  const dayLabelsShort = t('common.daysShort', { returnObjects: true }) as string[];
   return (
     <View className="flex-row gap-1 px-4">
       {days.map((day) => {
@@ -36,7 +38,7 @@ export function DaySelector({ days, selectedDayId, onSelect }: DaySelectorProps)
               className={`font-body-semibold text-small ${selected ? 'text-cyan-vivid' : 'text-primary-light dark:text-primary'}`}
               numberOfLines={1}
             >
-              {DAY_LABELS_SHORT[day.day_of_week]}
+              {dayLabelsShort[day.day_of_week]}
             </Text>
             <View className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: dotColor }} />
           </Pressable>

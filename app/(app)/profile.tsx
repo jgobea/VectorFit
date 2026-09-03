@@ -1,5 +1,6 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, BackHandler, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -20,6 +21,7 @@ import { useProfileStats } from '@/hooks/useProfileStats';
 import { useAuthStore } from '@/stores/authStore';
 
 export default function ProfileScreen() {
+  const { t } = useTranslation();
   const userId = useAuthStore((s) => s.user?.id);
   const email = useAuthStore((s) => s.user?.email) ?? '—';
 
@@ -93,7 +95,7 @@ export default function ProfileScreen() {
     // covers the bottom safe-area inset — adding it here double-pads.
     <SafeAreaView className="flex-1 bg-background-light dark:bg-background" edges={['top']}>
       <View className="px-6 pt-2">
-        <Text className="text-center font-display text-h3 text-primary-light dark:text-primary">Profile</Text>
+        <Text className="text-center font-display text-h3 text-primary-light dark:text-primary">{t('nav.profile')}</Text>
       </View>
 
       <ScrollView
@@ -137,19 +139,19 @@ export default function ProfileScreen() {
           style={{ paddingBottom: tabBarHeight + insets.bottom + 16 }}
         >
           <View className="flex-1">
-            <Button label="Cancel" variant="secondary" onPress={requestCancel} />
+            <Button label={t('common.cancel')} variant="secondary" onPress={requestCancel} />
           </View>
           <View className="flex-1">
-            <Button label="Save Changes" loading={isSaving} onPress={save} />
+            <Button label={t('common.saveChanges')} loading={isSaving} onPress={save} />
           </View>
         </View>
       )}
 
       <ConfirmModal
         visible={confirmDiscardOpen}
-        title="Discard changes?"
-        message="You've made changes since you started editing. Going back will undo them."
-        confirmLabel="Discard"
+        title={t('common.discardChangesTitle')}
+        message={t('common.discardChangesMessage')}
+        confirmLabel={t('common.discard')}
         destructive
         onConfirm={() => {
           setConfirmDiscardOpen(false);

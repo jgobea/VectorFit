@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
@@ -26,6 +27,7 @@ export function ConfirmModal({
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
+  const { t } = useTranslation();
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onCancel}>
       <Pressable className="flex-1 items-center justify-center bg-black/60 px-6" onPress={onCancel}>
@@ -37,7 +39,7 @@ export function ConfirmModal({
           <Text className="font-body text-body text-secondary-light dark:text-secondary">{message}</Text>
           <View className="flex-row gap-3 pt-2">
             <View className="flex-1">
-              <Button label="Cancel" variant="secondary" onPress={onCancel} />
+              <Button label={t('common.cancel')} variant="secondary" onPress={onCancel} />
             </View>
             <View className="flex-1">
               {destructive ? (

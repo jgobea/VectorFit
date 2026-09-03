@@ -1,5 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -24,6 +25,7 @@ export function RestTimer({
   isFetchingCoachFeedback,
   onStartNextSet,
 }: RestTimerProps) {
+  const { t } = useTranslation();
   const [secondsLeft, setSecondsLeft] = useState(restSeconds);
 
   useEffect(() => {
@@ -39,7 +41,7 @@ export function RestTimer({
   return (
     <SafeAreaView className="flex-1 bg-background">
       <View className="flex-1 items-center justify-center gap-6 px-6">
-        <Text className="font-body-semibold text-body text-secondary">Rest</Text>
+        <Text className="font-body-semibold text-body text-secondary">{t('liveReview.rest')}</Text>
         <Text className="font-display text-primary" style={{ fontSize: 64, lineHeight: 72 }}>
           {minutes}:{String(seconds).padStart(2, '0')}
         </Text>
@@ -48,13 +50,13 @@ export function RestTimer({
           <View className="w-full max-w-xs flex-row items-start gap-2 rounded-xl border border-cyan-vivid/30 bg-cyan-vivid/10 px-4 py-3">
             <Feather name="zap" size={16} color="#00E5FF" style={{ marginTop: 2 }} />
             <Text className="flex-1 font-body text-small text-primary">
-              {isFetchingCoachFeedback ? 'Coach is thinking…' : coachFeedback}
+              {isFetchingCoachFeedback ? t('liveReview.coachThinking') : coachFeedback}
             </Text>
           </View>
         )}
 
         <Button
-          label={isDone ? `Start Set ${nextSetNumber}` : `Skip Rest — Start Set ${nextSetNumber}`}
+          label={isDone ? t('liveReview.startSet', { n: nextSetNumber }) : t('liveReview.skipRestStartSet', { n: nextSetNumber })}
           variant={isDone ? 'primary' : 'secondary'}
           onPress={onStartNextSet}
         />

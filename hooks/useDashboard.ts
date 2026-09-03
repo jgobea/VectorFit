@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { useDashboardStats } from '@/hooks/useDashboardStats';
-import { getTimeBasedGreeting, getMotivationalQuote } from '@/lib/greeting';
+import { getTimeOfDayGreetingKey, getMotivationalQuoteIndex } from '@/lib/greeting';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { useUserStore } from '@/stores/userStore';
 
 export function useDashboard() {
+  const { t } = useTranslation();
   const userId = useAuthStore((s) => s.user?.id);
   const profile = useUserStore((s) => s.profile);
   const setProfile = useUserStore((s) => s.setProfile);
@@ -44,11 +46,14 @@ export function useDashboard() {
     setIsRefreshing(false);
   }, [load]);
 
-  const firstName = profile?.full_name?.split(' ')[0] ?? 'there';
+  const firstName = profile?.full_name?.split(' ')[0] ?? t('dashboard.greeting.fallbackName');
 
   return {
-    greeting: `${getTimeBasedGreeting()}, ${firstName}!`,
-    quote: getMotivationalQuote(),
+    greeting: t('dashboard.greeting.template', {
+      timeOfDay: t(`dashboard.greeting.${getTimeOfDayGreetingKey()}`),
+      name: firstName,
+    }),
+    quote: t(`dashboard.quotes.${getMotivationalQuoteIndex()}`),
     profile,
     stats,
     isRefreshing,

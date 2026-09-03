@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
@@ -9,6 +10,7 @@ import type { UserProfile } from '@/types/user';
 // states per DESIGN_SPEC.md §E) and saving it back. Avatar upload is a
 // separate, immediate action — see hooks/useAvatarUpload.ts.
 export function useProfile() {
+  const { t } = useTranslation();
   const userId = useAuthStore((s) => s.user?.id);
   const profile = useUserStore((s) => s.profile);
   const setProfile = useUserStore((s) => s.setProfile);
@@ -92,8 +94,8 @@ export function useProfile() {
     setProfile(data);
     setDraft(null);
     setIsEditing(false);
-    setSuccessMessage('Profile updated');
-  }, [userId, draft, profile, setProfile]);
+    setSuccessMessage(t('profile.updated'));
+  }, [userId, draft, profile, setProfile, t]);
 
   return {
     profile,

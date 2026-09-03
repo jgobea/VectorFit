@@ -6,7 +6,6 @@ import type { CategorySlice, DayActivity, ProgressStats, WeeklyCount, WeeklyScor
 
 const WEEKS_BACK = 8;
 const DAYS_BACK = 14;
-const WEEKDAY_SHORT = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 // Same body-area taxonomy as supabase/migrations/20260825140000_categorize_exercises.sql
 // and ExercisePickerModal's 'Other' fallback for uncategorized/custom exercises.
@@ -102,7 +101,7 @@ export function useProgressStats(userId: string | undefined) {
       const key = toLocalDateKey(date);
       last14Days.push({
         dateKey: key,
-        label: WEEKDAY_SHORT[date.getDay()],
+        dayOfWeek: date.getDay(),
         active: completionSet.has(key),
         isToday: i === 0,
       });

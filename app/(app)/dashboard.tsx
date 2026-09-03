@@ -3,6 +3,7 @@ import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -21,6 +22,7 @@ import { getTodayRoutineDay, getUpcomingRoutineDays } from '@/lib/routineSchedul
 
 export default function DashboardScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   // The tab bar now floats (position: 'absolute' in app/(app)/_layout.tsx)
   // instead of reserving its own space, so scroll content needs its own
   // bottom padding to clear it — same reasoning on every Tabs.Screen.
@@ -76,12 +78,12 @@ export default function DashboardScreen() {
             <>
               <View className="gap-3">
                 <View className="flex-row items-center justify-between">
-                  <Text className="font-display text-h2 text-primary-light dark:text-primary">Today&apos;s Workout</Text>
+                  <Text className="font-display text-h2 text-primary-light dark:text-primary">{t('dashboard.todaysWorkout')}</Text>
                   <Pressable
                     onPress={() => router.push('/routine-builder')}
                     hitSlop={8}
                     accessibilityRole="button"
-                    accessibilityLabel="Edit today's workout"
+                    accessibilityLabel={t('dashboard.editTodaysWorkout')}
                     className="h-9 w-9 items-center justify-center rounded-full border border-border-light active:opacity-70 dark:border-border"
                   >
                     <Feather name="edit-2" size={15} color="#00E5FF" />
@@ -98,14 +100,14 @@ export default function DashboardScreen() {
               </View>
 
               <View className="gap-3">
-                <Text className="font-display text-h2 text-primary-light dark:text-primary">Upcoming</Text>
+                <Text className="font-display text-h2 text-primary-light dark:text-primary">{t('dashboard.upcoming.title')}</Text>
                 <UpcomingRoutineList days={getUpcomingRoutineDays(routine)} />
               </View>
             </>
           )}
 
           <View className="gap-3">
-            <Text className="font-display text-h2 text-primary-light dark:text-primary">Quick Access</Text>
+            <Text className="font-display text-h2 text-primary-light dark:text-primary">{t('dashboard.quickAccess.title')}</Text>
             <QuickAccessGrid />
           </View>
 

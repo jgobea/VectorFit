@@ -1,5 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, Text } from 'react-native';
 
 interface DayMenuProps {
@@ -11,6 +12,7 @@ interface DayMenuProps {
 // Clear day. A small bottom sheet, not a native ActionSheet, to match the
 // rest of the app's custom-modal styling.
 export function DayMenu({ onCopyTo, onClearDay }: DayMenuProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   return (
@@ -19,7 +21,7 @@ export function DayMenu({ onCopyTo, onClearDay }: DayMenuProps) {
         onPress={() => setOpen(true)}
         hitSlop={8}
         accessibilityRole="button"
-        accessibilityLabel="Day options"
+        accessibilityLabel={t('routineBuilder.dayOptions')}
         className="h-10 w-10 items-center justify-center rounded-lg active:opacity-70"
       >
         <Feather name="more-horizontal" size={20} color="#A0A0A8" />
@@ -40,7 +42,7 @@ export function DayMenu({ onCopyTo, onClearDay }: DayMenuProps) {
               className="flex-row items-center gap-3 rounded-xl px-4 py-3.5 active:opacity-70"
             >
               <Feather name="copy" size={18} color="#00E5FF" />
-              <Text className="font-body-semibold text-body text-primary-light dark:text-primary">Copy to…</Text>
+              <Text className="font-body-semibold text-body text-primary-light dark:text-primary">{t('routineBuilder.copyTo')}</Text>
             </Pressable>
             <Pressable
               onPress={() => {
@@ -51,7 +53,7 @@ export function DayMenu({ onCopyTo, onClearDay }: DayMenuProps) {
               className="flex-row items-center gap-3 rounded-xl px-4 py-3.5 active:opacity-70"
             >
               <Feather name="x-circle" size={18} color="#FF3B30" />
-              <Text className="font-body-semibold text-body text-error">Clear day</Text>
+              <Text className="font-body-semibold text-body text-error">{t('routineBuilder.clearDay')}</Text>
             </Pressable>
           </Pressable>
         </Pressable>

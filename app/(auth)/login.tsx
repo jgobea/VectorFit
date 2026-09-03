@@ -1,14 +1,17 @@
 import { Link } from 'expo-router';
 import { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
+import { LanguageSwitch } from '@/components/ui/LanguageSwitch';
 import { useLogin } from '@/hooks/useLogin';
 
 export default function LoginScreen() {
+  const { t } = useTranslation();
   const {
     email,
     setEmail,
@@ -40,6 +43,10 @@ export default function LoginScreen() {
           contentContainerClassName="flex-grow justify-center px-6"
           keyboardShouldPersistTaps="handled"
         >
+          <View className="mb-8 flex-row justify-end">
+            <LanguageSwitch />
+          </View>
+
           {/* Hero / wordmark — DESIGN_SPEC.md typography: bold "vector" + light "Fit" */}
           <View className="mb-12 items-center">
             <Text className="text-h1">
@@ -47,13 +54,13 @@ export default function LoginScreen() {
               <Text className="font-body text-primary-light dark:text-primary">Fit</Text>
             </Text>
             <Text className="mt-2 font-body text-body text-secondary-light dark:text-secondary">
-              Your AI personal trainer
+              {t('login.tagline')}
             </Text>
           </View>
 
           <View className="gap-section">
             <Input
-              label="Email"
+              label={t('login.email')}
               value={email}
               onChangeText={setEmail}
               onBlur={onEmailBlur}
@@ -69,7 +76,7 @@ export default function LoginScreen() {
 
             <Input
               ref={passwordRef}
-              label="Password"
+              label={t('login.password')}
               value={password}
               onChangeText={setPassword}
               onBlur={onPasswordBlur}
@@ -85,23 +92,23 @@ export default function LoginScreen() {
             {formError && <Text className="text-center font-body text-small text-error">{formError}</Text>}
 
             <View className="flex-row items-center justify-between">
-              <Checkbox label="Remember me" checked={rememberMe} onToggle={setRememberMe} />
+              <Checkbox label={t('login.rememberMe')} checked={rememberMe} onToggle={setRememberMe} />
               <Link href="/(auth)/forgot-password" asChild>
-                <Text className="font-body text-small text-cyan-vivid">Forgot Password?</Text>
+                <Text className="font-body text-small text-cyan-vivid">{t('login.forgotPassword')}</Text>
               </Link>
             </View>
 
-            <Button label="Login" onPress={submit} disabled={!canSubmit} loading={isSubmitting} />
+            <Button label={t('login.submit')} onPress={submit} disabled={!canSubmit} loading={isSubmitting} />
 
             <Link href="/(auth)/signup" asChild>
-              <Button label="Sign Up" variant="secondary" />
+              <Button label={t('login.signUp')} variant="secondary" />
             </Link>
           </View>
 
           <Text className="mt-12 text-center font-body text-small text-secondary-light dark:text-secondary">
-            By continuing you agree to VectorFit&apos;s{' '}
+            {t('login.termsPrefix')}{' '}
             <Link href="/terms" className="text-cyan-vivid">
-              Terms of Service and Privacy Policy
+              {t('login.termsLink')}
             </Link>
             .
           </Text>

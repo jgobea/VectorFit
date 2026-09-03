@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 
 import { Card } from '@/components/ui/Card';
@@ -44,6 +45,7 @@ function Divider() {
 // glance, no drag/swipe required, and there's nothing to resize/re-wrap
 // across breakpoints.
 export function StatsSummaryCard({ stats, todaysLoadKg, goalWorkoutsPerWeek }: StatsSummaryCardProps) {
+  const { t } = useTranslation();
   const workouts = `${stats?.workoutsThisWeek ?? 0}/${goalWorkoutsPerWeek}`;
   const load = `${Math.round(todaysLoadKg)}`;
   const streak = `${stats?.streakDays ?? 0}d`;
@@ -52,15 +54,20 @@ export function StatsSummaryCard({ stats, todaysLoadKg, goalWorkoutsPerWeek }: S
   return (
     <Card>
       <View className="flex-row">
-        <StatCell icon="check-circle" value={workouts} label="Workouts this week" />
+        <StatCell icon="check-circle" value={workouts} label={t('dashboard.stats.workoutsThisWeek')} />
         <Divider />
-        <StatCell icon="bar-chart-2" value={`${load}kg`} label="Today's load volume" />
+        <StatCell icon="bar-chart-2" value={`${load}kg`} label={t('dashboard.stats.todaysLoad')} />
       </View>
       <View className="my-3 h-px bg-border-light dark:bg-border" />
       <View className="flex-row">
-        <StatCell icon="repeat" value={streak} label="Day streak" />
+        <StatCell icon="repeat" value={streak} label={t('dashboard.stats.dayStreak')} />
         <Divider />
-        <StatCell icon="clock" value={activeMinutes} label="Today's active time" labelSuffix="including live review" />
+        <StatCell
+          icon="clock"
+          value={activeMinutes}
+          label={t('dashboard.stats.todaysActiveTime')}
+          labelSuffix={t('dashboard.stats.includingLiveReview')}
+        />
       </View>
     </Card>
   );

@@ -1,5 +1,6 @@
 import { Redirect, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -35,6 +36,7 @@ function isStepComplete(step: number, draft: OnboardingDraft): boolean {
 // app/(app)/_layout.tsx's redirect when hooks/useOnboardingGate.ts finds
 // onboarding_completed = false.
 export default function OnboardingScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const session = useAuthStore((s) => s.session);
   const setProfile = useUserStore((s) => s.setProfile);
@@ -92,16 +94,16 @@ export default function OnboardingScreen() {
   };
 
   const steps = [
-    { title: 'About You', subtitle: "Let's start with the basics.", content: <AboutYouStep draft={draft} onChange={patchDraft} /> },
+    { title: t('onboarding.aboutYou.title'), subtitle: t('onboarding.aboutYou.subtitle'), content: <AboutYouStep draft={draft} onChange={patchDraft} /> },
     {
-      title: 'Your Body',
-      subtitle: 'Helps your AI trainer tailor exercises to you.',
+      title: t('onboarding.body.title'),
+      subtitle: t('onboarding.body.subtitle'),
       content: <BodyStep draft={draft} onChange={patchDraft} />,
     },
-    { title: 'Your Goals', subtitle: "What are you training for?", content: <GoalsStep draft={draft} onChange={patchDraft} /> },
+    { title: t('onboarding.goals.title'), subtitle: t('onboarding.goals.subtitle'), content: <GoalsStep draft={draft} onChange={patchDraft} /> },
     {
-      title: 'Coaching Style',
-      subtitle: 'How should your AI trainer talk to you?',
+      title: t('onboarding.coachStyle.title'),
+      subtitle: t('onboarding.coachStyle.subtitle'),
       content: <CoachStyleStep draft={draft} onChange={patchDraft} />,
     },
   ];

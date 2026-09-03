@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 
 import { ProfileSection } from '@/components/features/profile/ProfileSection';
@@ -23,18 +24,23 @@ function StatRow({ label, value }: { label: string; value: string }) {
 }
 
 export function PhysicalStatsSection({ profile, isEditing, onChange }: PhysicalStatsSectionProps) {
+  const { t } = useTranslation();
+  const genderOptions = GENDER_OPTIONS.map((o) => ({ ...o, label: t(o.label) }));
+  const bodyTypeOptions = BODY_TYPE_OPTIONS.map((o) => ({ ...o, label: t(o.label) }));
+
   if (!isEditing) {
-    const genderLabel = GENDER_OPTIONS.find((o) => o.value === profile.gender)?.label ?? '—';
+    const genderLabel = genderOptions.find((o) => o.value === profile.gender)?.label ?? '—';
+    const bodyTypeLabel = bodyTypeOptions.find((o) => o.value === profile.body_type)?.label ?? '—';
     return (
-      <ProfileSection title="Physical Stats">
-        <StatRow label="Age" value={profile.age ? `${profile.age}` : '—'} />
-        <StatRow label="Height" value={profile.height_cm ? `${profile.height_cm} cm` : '—'} />
-        <StatRow label="Weight" value={profile.weight_kg ? `${profile.weight_kg} kg` : '—'} />
-        <StatRow label="Gender" value={genderLabel} />
-        <StatRow label="Body type" value={profile.body_type ?? '—'} />
+      <ProfileSection title={t('profile.physicalStats.title')}>
+        <StatRow label={t('profile.physicalStats.age')} value={profile.age ? `${profile.age}` : '—'} />
+        <StatRow label={t('profile.physicalStats.height')} value={profile.height_cm ? `${profile.height_cm} cm` : '—'} />
+        <StatRow label={t('profile.physicalStats.weight')} value={profile.weight_kg ? `${profile.weight_kg} kg` : '—'} />
+        <StatRow label={t('profile.physicalStats.gender')} value={genderLabel} />
+        <StatRow label={t('profile.physicalStats.bodyType')} value={bodyTypeLabel} />
         {profile.weight_updated_at && (
           <Text className="font-body text-small text-secondary-light dark:text-secondary">
-            Last updated: {new Date(profile.weight_updated_at).toLocaleDateString()}
+            {t('profile.physicalStats.lastUpdated', { date: new Date(profile.weight_updated_at).toLocaleDateString() })}
           </Text>
         )}
       </ProfileSection>
@@ -42,11 +48,11 @@ export function PhysicalStatsSection({ profile, isEditing, onChange }: PhysicalS
   }
 
   return (
-    <ProfileSection title="Physical Stats">
+    <ProfileSection title={t('profile.physicalStats.title')}>
       <View className="flex-row gap-4">
         <View className="flex-1">
           <NumberStepperField
-            label="Age"
+            label={t('profile.physicalStats.age')}
             value={profile.age ?? 25}
             min={13}
             max={120}
@@ -55,7 +61,7 @@ export function PhysicalStatsSection({ profile, isEditing, onChange }: PhysicalS
         </View>
         <View className="flex-1">
           <NumberStepperField
-            label="Height (cm)"
+            label={t('profile.physicalStats.heightCm')}
             value={profile.height_cm ?? 170}
             min={100}
             max={250}
@@ -70,7 +76,7 @@ export function PhysicalStatsSection({ profile, isEditing, onChange }: PhysicalS
       )}
 
       <NumberStepperField
-        label="Weight (kg)"
+        label={t('profile.physicalStats.weightKg')}
         value={profile.weight_kg ?? 70}
         min={20}
         max={300}
@@ -79,11 +85,11 @@ export function PhysicalStatsSection({ profile, isEditing, onChange }: PhysicalS
         onChange={(weight_kg) => onChange({ weight_kg })}
       />
 
-      <RadioGroup label="Gender" value={profile.gender} options={GENDER_OPTIONS} onChange={(gender) => onChange({ gender })} />
+      <RadioGroup label={t('profile.physicalStats.gender')} value={profile.gender} options={genderOptions} onChange={(gender) => onChange({ gender })} />
       <RadioGroup
-        label="Body type"
+        label={t('profile.physicalStats.bodyType')}
         value={profile.body_type as (typeof BODY_TYPE_OPTIONS)[number]['value'] | null}
-        options={BODY_TYPE_OPTIONS}
+        options={bodyTypeOptions}
         onChange={(body_type) => onChange({ body_type })}
       />
     </ProfileSection>

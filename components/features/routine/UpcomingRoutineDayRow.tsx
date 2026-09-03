@@ -1,18 +1,16 @@
 import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 
 import type { ScheduledDay } from '@/lib/routineSchedule';
-import { DAY_LABELS_SHORT } from '@/types/routine';
-
-const MONTH_LABELS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 // Hand-rolled instead of toLocaleDateString(undefined, {...}) — Hermes's
 // Intl support is incomplete for some device locales and was silently
 // dropping the month name (e.g. rendering "jue, 3 de" with nothing after
 // "de"). This can't produce a partial string.
-function formatDayLabel(date: Date): string {
-  return `${DAY_LABELS_SHORT[date.getDay()]}, ${MONTH_LABELS_SHORT[date.getMonth()]} ${date.getDate()}`;
+function formatDayLabel(date: Date, daysShort: string[], monthsShort: string[]): string {
+  return `${daysShort[date.getDay()]}, ${monthsShort[date.getMonth()]} ${date.getDate()}`;
 }
 
 interface UpcomingRoutineDayRowProps {
@@ -22,6 +20,9 @@ interface UpcomingRoutineDayRowProps {
 // Mirrors UpcomingWorkoutRow (old scheduled_date model) for routine days —
 // rest days collapse to a single line instead of an expandable preview.
 export function UpcomingRoutineDayRow({ scheduled }: UpcomingRoutineDayRowProps) {
+  const { t } = useTranslation();
+  const daysShort = t('common.daysShort', { returnObjects: true }) as string[];
+  const monthsShort = t('common.monthsShort', { returnObjects: true }) as string[];
   const { date, day } = scheduled;
   const [expanded, setExpanded] = useState(false);
   const preview = day.exercises
@@ -34,12 +35,12 @@ export function UpcomingRoutineDayRow({ scheduled }: UpcomingRoutineDayRowProps)
     return (
       <View className="flex-row items-center justify-between border-b border-border-light py-3.5 dark:border-border">
         <Text className="flex-1 pr-3 font-body-medium text-small text-cyan-vivid" numberOfLines={1}>
-          {formatDayLabel(date)}
+          {formatDayLabel(date, daysShort, monthsShort)}
           {!!day.name && (
             <Text className="font-body-medium text-small text-primary-light dark:text-primary"> · {day.name}</Text>
           )}
         </Text>
-        <Text className="font-body text-small text-secondary-light dark:text-secondary">Rest day</Text>
+        <Text className="font-body text-small text-secondary-light dark:text-secondary">{t('dashboard.today.restDayTitle')}</Text>
       </View>
     );
   }
@@ -54,14 +55,14 @@ export function UpcomingRoutineDayRow({ scheduled }: UpcomingRoutineDayRowProps)
       <View className="flex-row items-center justify-between">
         <View className="flex-1 pr-3">
           <Text className="font-body-medium text-small text-cyan-vivid" numberOfLines={1}>
-            {formatDayLabel(date)}
+            {formatDayLabel(date, daysShort, monthsShort)}
             {!!day.name && (
               <Text className="font-body-medium text-small text-primary-light dark:text-primary"> · {day.name}</Text>
             )}
           </Text>
           {!expanded && (
             <Text className="mt-0.5 font-body text-small text-secondary-light dark:text-secondary" numberOfLines={1}>
-              {preview || 'No exercises added yet'}
+              {preview || t('dashboard.upcoming.noExercisesYet')}
             </Text>
           )}
         </View>
@@ -72,12 +73,12 @@ export function UpcomingRoutineDayRow({ scheduled }: UpcomingRoutineDayRowProps)
         <View className="mt-2 gap-1">
           {day.exercises.length === 0 && (
             <Text className="font-body text-small text-secondary-light dark:text-secondary">
-              No exercises added yet.
+              {t('dashboard.upcoming.noExercisesYetPeriod')}
             </Text>
           )}
           {day.exercises.map((e) => (
             <Text key={e.id} className="font-body text-small text-secondary-light dark:text-secondary">
-              • {e.exercise?.name ?? 'Exercise'}
+              • {e.exercise?.name ?? t('common.exercise')}
               {e.sets && e.reps ? ` — ${e.sets}×${e.reps}` : ''}
             </Text>
           ))}

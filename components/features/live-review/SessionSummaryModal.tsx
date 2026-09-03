@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Modal, ScrollView, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
@@ -31,6 +32,7 @@ export function SessionSummaryModal({
   isFetchingCoachFeedback,
   onDone,
 }: SessionSummaryModalProps) {
+  const { t } = useTranslation();
   return (
     <Modal visible={visible} animationType="fade" transparent>
       <View className="flex-1 items-center justify-center bg-black/70 px-6">
@@ -41,35 +43,35 @@ export function SessionSummaryModal({
                 <Feather name="check" size={30} color="#39FF14" />
               </View>
               <Text className="text-center font-display text-h2 text-primary-light dark:text-primary">
-                Nice work!
+                {t('liveReview.summary.niceWork')}
               </Text>
               <Text className="text-center font-body text-body text-secondary-light dark:text-secondary">
-                {exerciseName} session complete
+                {t('liveReview.summary.sessionComplete', { name: exerciseName })}
               </Text>
             </View>
 
             <View className="flex-row flex-wrap gap-3">
               <Card className="flex-1 items-center gap-1">
                 <Text className="font-display text-h2 text-cyan-vivid">{summary?.totalReps ?? 0}</Text>
-                <Text className="font-body text-small text-secondary-light dark:text-secondary">Total Reps</Text>
+                <Text className="font-body text-small text-secondary-light dark:text-secondary">{t('liveReview.summary.totalReps')}</Text>
               </Card>
               <Card className="flex-1 items-center gap-1">
                 <Text className="font-display text-h2 text-green-neon">
                   {summary?.setsCompleted ?? 0}/{totalSets}
                 </Text>
-                <Text className="font-body text-small text-secondary-light dark:text-secondary">Sets</Text>
+                <Text className="font-body text-small text-secondary-light dark:text-secondary">{t('liveReview.summary.sets')}</Text>
               </Card>
               <Card className="flex-1 items-center gap-1">
                 <Text className="font-display text-h2 text-primary-light dark:text-primary">
                   {summary?.avgFormScore ?? '—'}
                 </Text>
-                <Text className="font-body text-small text-secondary-light dark:text-secondary">Avg Score</Text>
+                <Text className="font-body text-small text-secondary-light dark:text-secondary">{t('liveReview.summary.avgScore')}</Text>
               </Card>
               <Card className="flex-1 items-center gap-1">
                 <Text className="font-display text-h2 text-primary-light dark:text-primary">
                   {summary?.bestRepScore ?? '—'}
                 </Text>
-                <Text className="font-body text-small text-secondary-light dark:text-secondary">Best Rep</Text>
+                <Text className="font-body text-small text-secondary-light dark:text-secondary">{t('liveReview.summary.bestRep')}</Text>
               </Card>
             </View>
 
@@ -77,12 +79,12 @@ export function SessionSummaryModal({
               <View className="flex-row items-start gap-2 rounded-xl border border-cyan-vivid/30 bg-cyan-vivid/10 px-4 py-3">
                 <Feather name="zap" size={16} color="#00E5FF" style={{ marginTop: 2 }} />
                 <Text className="flex-1 font-body text-small text-primary-light dark:text-primary">
-                  {isFetchingCoachFeedback ? 'Coach is thinking…' : coachFeedback}
+                  {isFetchingCoachFeedback ? t('liveReview.coachThinking') : coachFeedback}
                 </Text>
               </View>
             )}
 
-            <Button label="Save Session" onPress={onDone} />
+            <Button label={t('liveReview.summary.saveSession')} onPress={onDone} />
           </ScrollView>
         </View>
       </View>

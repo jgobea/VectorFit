@@ -3,7 +3,8 @@
 // trends). See hooks/useProgressStats.ts for how each field is computed.
 export interface DayActivity {
   dateKey: string;
-  label: string;
+  /** 0 (Sunday) - 6 (Saturday) — ActivityStrip.tsx maps this to a translated single-letter label. */
+  dayOfWeek: number;
   active: boolean;
   isToday: boolean;
 }

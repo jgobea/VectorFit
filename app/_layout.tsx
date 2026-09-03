@@ -15,6 +15,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
+import { useLocaleStore } from '@/stores/localeStore';
 import { useUiStore } from '@/stores/uiStore';
 
 SplashScreen.preventAutoHideAsync();
@@ -26,6 +27,10 @@ export default function RootLayout() {
   // Reading this triggers uiStore's module import, which is what makes
   // NativeWind's colorScheme actually get set — see stores/uiStore.ts.
   const themeHydrated = useUiStore((s) => s.hasHydrated);
+  // Same reasoning as themeHydrated above — importing this triggers
+  // localeStore's module import, which is what starts i18next (see
+  // stores/localeStore.ts / lib/i18n/index.ts).
+  const localeHydrated = useLocaleStore((s) => s.hasHydrated);
 
   const [fontsLoaded] = useFonts({
     Inter: Inter_400Regular,
@@ -47,7 +52,7 @@ export default function RootLayout() {
     return () => subscription.subscription.unsubscribe();
   }, [setSession, setInitializing]);
 
-  const ready = fontsLoaded && !isInitializing && themeHydrated;
+  const ready = fontsLoaded && !isInitializing && themeHydrated && localeHydrated;
 
   useEffect(() => {
     if (ready) SplashScreen.hideAsync();

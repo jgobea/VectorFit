@@ -1,5 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 
 import { InfoModal } from '@/components/ui/InfoModal';
@@ -9,23 +10,24 @@ import { InfoModal } from '@/components/ui/InfoModal';
 // as Dashboard's header having none.
 export function ChatHeader() {
   const [infoOpen, setInfoOpen] = useState(false);
+  const { t } = useTranslation();
 
   return (
     <View className="flex-row items-center justify-between border-b border-border-light px-4 pb-3 pt-2 dark:border-border">
       <View className="flex-1">
         <Text className="font-display text-h3 text-primary-light dark:text-primary" numberOfLines={1}>
-          AI Trainer Chat
+          {t('chat.title')}
         </Text>
         <View className="flex-row items-center gap-1.5">
           <View className="h-1.5 w-1.5 rounded-full bg-green-neon" />
-          <Text className="font-body text-small text-secondary-light dark:text-secondary">AI Trainer is online</Text>
+          <Text className="font-body text-small text-secondary-light dark:text-secondary">{t('chat.online')}</Text>
         </View>
       </View>
       <Pressable
         onPress={() => setInfoOpen(true)}
         hitSlop={8}
         accessibilityRole="button"
-        accessibilityLabel="Trainer info"
+        accessibilityLabel={t('chat.trainerInfo')}
         className="mr-2 h-11 w-11 items-center justify-center rounded-full border border-border-light active:opacity-70 dark:border-border"
       >
         <Feather name="info" size={18} color="#A0A0A8" />
@@ -33,8 +35,8 @@ export function ChatHeader() {
 
       <InfoModal
         visible={infoOpen}
-        title="About your AI Trainer"
-        message="Ask about exercise form, routines, nutrition, or recovery. Advice is personalized to your profile and available anytime."
+        title={t('chat.infoModalTitle')}
+        message={t('chat.infoModalMessage')}
         onClose={() => setInfoOpen(false)}
       />
     </View>

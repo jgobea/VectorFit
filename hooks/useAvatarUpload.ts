@@ -1,5 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
@@ -26,6 +27,7 @@ async function uploadAvatar(userId: string, asset: ImagePicker.ImagePickerAsset)
 // (camera or photo library)". Saves immediately on pick — it's a standalone
 // action, not part of the edit-fields draft/save flow.
 export function useAvatarUpload(userId: string | undefined) {
+  const { t } = useTranslation();
   const setProfile = useUserStore((s) => s.setProfile);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,10 +36,10 @@ export function useAvatarUpload(userId: string | undefined) {
     if (!userId) return null;
 
     const source = await new Promise<'camera' | 'library' | null>((resolve) => {
-      Alert.alert('Change profile picture', undefined, [
-        { text: 'Take Photo', onPress: () => resolve('camera') },
-        { text: 'Choose from Library', onPress: () => resolve('library') },
-        { text: 'Cancel', style: 'cancel', onPress: () => resolve(null) },
+      Alert.alert(t('profile.header.changePicture'), undefined, [
+        { text: t('profile.header.takePhoto'), onPress: () => resolve('camera') },
+        { text: t('profile.header.chooseFromLibrary'), onPress: () => resolve('library') },
+        { text: t('common.cancel'), style: 'cancel', onPress: () => resolve(null) },
       ]);
     });
     if (!source) return null;
@@ -76,12 +78,12 @@ export function useAvatarUpload(userId: string | undefined) {
       setProfile(data);
       return avatarUrl;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload photo');
+      setError(err instanceof Error ? err.message : t('profile.header.uploadFailed'));
       return null;
     } finally {
       setIsUploading(false);
     }
-  }, [userId, setProfile]);
+  }, [userId, setProfile, t]);
 
   return { pickAvatar, isUploading, error };
 }

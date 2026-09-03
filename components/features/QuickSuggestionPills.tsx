@@ -1,12 +1,5 @@
+import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, Text } from 'react-native';
-
-// DESIGN_SPEC.md §C.3 — the exact four pre-populated questions listed there.
-const SUGGESTIONS = [
-  'How do I improve my form?',
-  'Create a chest workout for me',
-  'What exercises help with my back?',
-  'How many rest days should I take?',
-];
 
 interface QuickSuggestionPillsProps {
   onSelect: (text: string) => void;
@@ -17,7 +10,10 @@ interface QuickSuggestionPillsProps {
 // react-native-web's ScrollView defaults to flexGrow: 1, so without
 // shrink-0/grow-0 here it stretches to fill whatever space its flex-column
 // parent has left — which is what blew these up into giant vertical ovals.
+// DESIGN_SPEC.md §C.3 — the exact four pre-populated questions listed there.
 export function QuickSuggestionPills({ onSelect, disabled }: QuickSuggestionPillsProps) {
+  const { t } = useTranslation();
+  const SUGGESTIONS = t('chat.suggestions', { returnObjects: true }) as string[];
   return (
     <ScrollView
       horizontal

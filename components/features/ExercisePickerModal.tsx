@@ -1,5 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Dimensions, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -64,6 +65,7 @@ export function ExercisePickerModal({
   onClose,
   onSelect,
 }: ExercisePickerModalProps) {
+  const { t } = useTranslation();
   const [creating, setCreating] = useState(false);
   const [draftName, setDraftName] = useState('');
   const [draftMeasurementType, setDraftMeasurementType] = useState<'reps' | 'time'>('reps');
@@ -90,8 +92,8 @@ export function ExercisePickerModal({
             className="rounded-t-3xl bg-background-light dark:bg-background"
           >
             <View className="flex-row items-center justify-between px-5 pt-4">
-              <Text className="font-display text-h3 text-primary-light dark:text-primary">Choose an exercise</Text>
-              <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" hitSlop={8}>
+              <Text className="font-display text-h3 text-primary-light dark:text-primary">{t('liveReview.setup.chooseExercise')}</Text>
+              <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={t('common.close')} hitSlop={8}>
                 <Feather name="x" size={22} color="#00E5FF" />
               </Pressable>
             </View>
@@ -102,7 +104,7 @@ export function ExercisePickerModal({
                   <TextInput
                     value={draftName}
                     onChangeText={setDraftName}
-                    placeholder="Exercise name"
+                    placeholder={t('exercisePicker.namePlaceholder')}
                     placeholderTextColor="#A0A0A8"
                     autoFocus
                     onSubmitEditing={submitCustom}
@@ -119,7 +121,7 @@ export function ExercisePickerModal({
                       <Text
                         className={`font-body-semibold text-small ${draftMeasurementType === 'reps' ? 'text-cyan-vivid' : 'text-secondary-light dark:text-secondary'}`}
                       >
-                        Weight / Reps
+                        {t('exercisePicker.weightReps')}
                       </Text>
                     </Pressable>
                     <Pressable
@@ -131,7 +133,7 @@ export function ExercisePickerModal({
                       <Text
                         className={`font-body-semibold text-small ${draftMeasurementType === 'time' ? 'text-cyan-vivid' : 'text-secondary-light dark:text-secondary'}`}
                       >
-                        Time
+                        {t('exercisePicker.time')}
                       </Text>
                     </Pressable>
                   </View>
@@ -147,7 +149,7 @@ export function ExercisePickerModal({
                         <Text
                           className={`font-body-semibold text-small ${draftTimeMode === 'stopwatch' ? 'text-cyan-vivid' : 'text-secondary-light dark:text-secondary'}`}
                         >
-                          Count up
+                          {t('exercisePicker.countUp')}
                         </Text>
                       </Pressable>
                       <Pressable
@@ -159,7 +161,7 @@ export function ExercisePickerModal({
                         <Text
                           className={`font-body-semibold text-small ${draftTimeMode === 'countdown' ? 'text-cyan-vivid' : 'text-secondary-light dark:text-secondary'}`}
                         >
-                          Countdown
+                          {t('exercisePicker.countdown')}
                         </Text>
                       </Pressable>
                     </View>
@@ -167,10 +169,10 @@ export function ExercisePickerModal({
 
                   <View className="flex-row gap-2">
                     <View className="flex-1">
-                      <Button label="Cancel" variant="secondary" onPress={() => setCreating(false)} />
+                      <Button label={t('common.cancel')} variant="secondary" onPress={() => setCreating(false)} />
                     </View>
                     <View className="flex-1">
-                      <Button label="Add" disabled={!draftName.trim()} onPress={submitCustom} />
+                      <Button label={t('exercisePicker.add')} disabled={!draftName.trim()} onPress={submitCustom} />
                     </View>
                   </View>
                 </View>
@@ -181,7 +183,7 @@ export function ExercisePickerModal({
                   className="mx-5 mt-3 h-12 flex-row items-center justify-center gap-2 rounded-xl border border-dashed border-cyan-vivid/50 active:opacity-70"
                 >
                   <Feather name="plus" size={16} color="#00E5FF" />
-                  <Text className="font-body-semibold text-small text-cyan-vivid">Add your own exercise</Text>
+                  <Text className="font-body-semibold text-small text-cyan-vivid">{t('exercisePicker.addYourOwn')}</Text>
                 </Pressable>
               ))}
 
@@ -191,7 +193,7 @@ export function ExercisePickerModal({
               </View>
             ) : error ? (
               <View className="items-center gap-2 px-6 py-10">
-                <Text className="text-center font-body text-body text-error">Couldn&apos;t load exercises</Text>
+                <Text className="text-center font-body text-body text-error">{t('exercisePicker.loadError')}</Text>
                 <Text className="text-center font-body text-small text-secondary-light dark:text-secondary">
                   {error}
                 </Text>
@@ -201,7 +203,7 @@ export function ExercisePickerModal({
                 {groups.map(([category, items]) => (
                   <View key={category} className="gap-2">
                     <Text className="font-body-semibold text-small text-secondary-light dark:text-secondary">
-                      {category.toUpperCase()}
+                      {(category === UNCATEGORIZED ? t('exercisePicker.otherCategory') : category).toUpperCase()}
                     </Text>
                     <View className="gap-2">
                       {items.map((item) => (

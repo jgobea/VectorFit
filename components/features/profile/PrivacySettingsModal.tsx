@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, Text } from 'react-native';
 
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
@@ -19,6 +20,7 @@ interface PrivacySettingsModalProps {
 // schema but nothing sets them) — no camera-recording toggle belongs here
 // until that's a real feature.
 export function PrivacySettingsModal({ visible, isClearing, onClose, onClearChatHistory }: PrivacySettingsModalProps) {
+  const { t } = useTranslation();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   return (
@@ -28,14 +30,13 @@ export function PrivacySettingsModal({ visible, isClearing, onClose, onClearChat
           onPress={(e) => e.stopPropagation()}
           className="w-full max-w-sm gap-4 rounded-2xl border border-border-light bg-surface-light p-card dark:border-border dark:bg-surface"
         >
-          <Text className="font-display text-h3 text-primary-light dark:text-primary">Privacy Settings</Text>
+          <Text className="font-display text-h3 text-primary-light dark:text-primary">{t('profile.privacy.title')}</Text>
 
           <Text className="font-body text-body text-secondary-light dark:text-secondary">
-            Messages you send to the AI trainer are processed by Google Gemini to generate replies, and stored in
-            your account until you clear them or delete your account.
+            {t('profile.privacy.chatMessage')}
           </Text>
           <Text className="font-body text-body text-secondary-light dark:text-secondary">
-            Live Review uses your camera for real-time pose detection only — no video is recorded or stored.
+            {t('profile.privacy.cameraMessage')}
           </Text>
 
           <Pressable
@@ -43,20 +44,20 @@ export function PrivacySettingsModal({ visible, isClearing, onClose, onClearChat
             accessibilityRole="button"
             className="h-14 items-center justify-center rounded-xl bg-error/10 active:opacity-70"
           >
-            <Text className="font-body-semibold text-base text-error">Clear Chat History</Text>
+            <Text className="font-body-semibold text-base text-error">{t('profile.privacy.clearChatHistory')}</Text>
           </Pressable>
 
           <Pressable onPress={onClose} accessibilityRole="button" className="items-center py-1 active:opacity-70">
-            <Text className="font-body-semibold text-body text-cyan-vivid">Done</Text>
+            <Text className="font-body-semibold text-body text-cyan-vivid">{t('common.done')}</Text>
           </Pressable>
         </Pressable>
       </Pressable>
 
       <ConfirmModal
         visible={confirmOpen}
-        title="Clear chat history?"
-        message="This deletes every message you've exchanged with the AI trainer. This can't be undone."
-        confirmLabel="Clear History"
+        title={t('profile.privacy.clearConfirmTitle')}
+        message={t('profile.privacy.clearConfirmMessage')}
+        confirmLabel={t('profile.privacy.clearHistoryConfirm')}
         destructive
         isSubmitting={isClearing}
         onCancel={() => setConfirmOpen(false)}

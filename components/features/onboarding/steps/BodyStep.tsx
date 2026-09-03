@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 
 import { NumberStepperField } from '@/components/ui/NumberStepperField';
@@ -12,11 +13,13 @@ interface StepProps {
 }
 
 export function BodyStep({ draft, onChange }: StepProps) {
+  const { t } = useTranslation();
+  const bodyTypeOptions = BODY_TYPE_OPTIONS.map((o) => ({ ...o, label: t(o.label) }));
   return (
     <View className="gap-6">
       <View className="gap-1">
         <NumberStepperField
-          label="Height (cm)"
+          label={t('profile.physicalStats.heightCm')}
           value={draft.height_cm}
           min={100}
           max={250}
@@ -28,7 +31,7 @@ export function BodyStep({ draft, onChange }: StepProps) {
       </View>
 
       <NumberStepperField
-        label="Weight (kg)"
+        label={t('profile.physicalStats.weightKg')}
         value={draft.weight_kg}
         min={20}
         max={300}
@@ -38,9 +41,9 @@ export function BodyStep({ draft, onChange }: StepProps) {
       />
 
       <RadioGroup
-        label="Body type"
+        label={t('profile.physicalStats.bodyType')}
         value={draft.body_type as (typeof BODY_TYPE_OPTIONS)[number]['value'] | null}
-        options={BODY_TYPE_OPTIONS}
+        options={bodyTypeOptions}
         onChange={(body_type) => onChange({ body_type })}
       />
     </View>

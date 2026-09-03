@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 
 import { LabeledSlider } from '@/components/ui/LabeledSlider';
@@ -12,28 +13,31 @@ interface StepProps {
 }
 
 export function GoalsStep({ draft, onChange }: StepProps) {
+  const { t } = useTranslation();
+  const goalOptions = GOAL_OPTIONS.map((o) => ({ ...o, label: t(o.label) }));
+  const experienceOptions = EXPERIENCE_OPTIONS.map((o) => ({ ...o, label: t(o.label) }));
   return (
     <View className="gap-6">
       <SelectField
-        label="Primary goal"
-        placeholder="Choose a goal"
+        label={t('profile.fitnessInfo.primaryGoal')}
+        placeholder={t('profile.fitnessInfo.chooseGoal')}
         value={draft.primary_goal}
-        options={GOAL_OPTIONS}
+        options={goalOptions}
         onChange={(primary_goal) => onChange({ primary_goal })}
       />
       <RadioGroup
-        label="Experience level"
+        label={t('profile.fitnessInfo.experienceLevel')}
         value={draft.experience_level}
-        options={EXPERIENCE_OPTIONS}
+        options={experienceOptions}
         onChange={(experience_level) => onChange({ experience_level })}
       />
       <LabeledSlider
-        label="Workout frequency"
+        label={t('profile.fitnessInfo.workoutFrequency')}
         value={draft.workout_frequency_days ?? 3}
         min={1}
         max={7}
         step={1}
-        formatValue={(v) => `${Math.round(v)}x / week`}
+        formatValue={(v) => t('profile.fitnessInfo.timesPerWeek', { n: Math.round(v) })}
         onChange={(v) => onChange({ workout_frequency_days: Math.round(v) })}
       />
     </View>

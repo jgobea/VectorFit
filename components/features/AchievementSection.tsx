@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 
 import { Card } from '@/components/ui/Card';
@@ -20,20 +21,22 @@ interface Badge {
 // No badges table exists yet (see HANDOFF.md), so badges are derived live
 // from real workout_sessions/pose_sessions stats rather than a fake feed.
 export function AchievementSection({ stats, goalDays, quote }: AchievementSectionProps) {
+  const { t } = useTranslation();
   const done = stats?.workoutsThisWeek ?? 0;
   const progress = Math.min(1, goalDays > 0 ? done / goalDays : 0);
 
   const badges: Badge[] = [];
-  if ((stats?.streakDays ?? 0) >= 3) badges.push({ key: 'streak', icon: 'repeat', label: `${stats!.streakDays}-Day Streak` });
-  if (done >= goalDays && goalDays > 0) badges.push({ key: 'goal', icon: 'award', label: 'Weekly Goal Hit' });
-  if (stats?.personalBestFormScore != null) badges.push({ key: 'pr', icon: 'trending-up', label: 'New Form PR' });
+  if ((stats?.streakDays ?? 0) >= 3)
+    badges.push({ key: 'streak', icon: 'repeat', label: t('dashboard.achievements.streakBadge', { days: stats!.streakDays }) });
+  if (done >= goalDays && goalDays > 0) badges.push({ key: 'goal', icon: 'award', label: t('dashboard.achievements.goalBadge') });
+  if (stats?.personalBestFormScore != null) badges.push({ key: 'pr', icon: 'trending-up', label: t('dashboard.achievements.prBadge') });
 
   return (
     <Card className="gap-3">
       <View className="flex-row items-center justify-between">
-        <Text className="font-display text-h3 text-primary-light dark:text-primary">This Week</Text>
+        <Text className="font-display text-h3 text-primary-light dark:text-primary">{t('dashboard.achievements.title')}</Text>
         <Text className="font-body text-small text-secondary-light dark:text-secondary">
-          {done}/{goalDays} workouts
+          {t('dashboard.achievements.workoutsCount', { done, goal: goalDays })}
         </Text>
       </View>
 

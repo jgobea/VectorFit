@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 
 interface DayStatusToggleProps {
@@ -9,6 +10,7 @@ interface DayStatusToggleProps {
 // gradient marks the selected side, same visual language as ChipGroup's
 // selected state.
 export function DayStatusToggle({ isRestDay, onChange }: DayStatusToggleProps) {
+  const { t } = useTranslation();
   return (
     <View className="flex-row rounded-xl border border-border-light p-1 dark:border-border">
       <Pressable
@@ -20,7 +22,7 @@ export function DayStatusToggle({ isRestDay, onChange }: DayStatusToggleProps) {
         <Text
           className={`font-body-semibold text-small ${isRestDay ? 'text-cyan-vivid' : 'text-secondary-light dark:text-secondary'}`}
         >
-          Rest Day
+          {t('routineBuilder.restDay')}
         </Text>
       </Pressable>
       <Pressable
@@ -32,7 +34,7 @@ export function DayStatusToggle({ isRestDay, onChange }: DayStatusToggleProps) {
         <Text
           className={`font-body-semibold text-small ${!isRestDay ? 'text-cyan-vivid' : 'text-secondary-light dark:text-secondary'}`}
         >
-          Training Day
+          {t('routineBuilder.trainingDay')}
         </Text>
       </Pressable>
     </View>

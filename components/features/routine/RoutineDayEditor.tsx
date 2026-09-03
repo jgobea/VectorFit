@@ -1,5 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TextInput, View } from 'react-native';
 
 import { CopyDayModal } from '@/components/features/routine/CopyDayModal';
@@ -22,6 +23,7 @@ interface RoutineDayEditorProps {
 // "Triceps Day", etc. — that name is what Today's Workout and Upcoming
 // display now.
 export function RoutineDayEditor({ day, allDays }: RoutineDayEditorProps) {
+  const { t } = useTranslation();
   const [copyModalOpen, setCopyModalOpen] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
   const [nameDraft, setNameDraft] = useState(day.name ?? '');
@@ -65,11 +67,11 @@ export function RoutineDayEditor({ day, allDays }: RoutineDayEditorProps) {
           value={nameDraft}
           onChangeText={setNameDraft}
           onBlur={commitName}
-          placeholder="Day name (e.g. Chest Day)"
+          placeholder={t('routineBuilder.dayNamePlaceholder')}
           placeholderTextColor="#A0A0A8"
           style={{ paddingVertical: 0, includeFontPadding: false }}
           className="flex-1 font-body-semibold text-body text-primary-light dark:text-primary"
-          accessibilityLabel="Day name"
+          accessibilityLabel={t('routineBuilder.dayName')}
         />
         <Feather name="edit-2" size={15} color="#A0A0A8" />
       </View>

@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Dimensions, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -36,6 +37,7 @@ export function SelectModal<T extends string>({
   onClose,
   onSelect,
 }: SelectModalProps<T>) {
+  const { t } = useTranslation();
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <Pressable className="flex-1 justify-end bg-black/60" onPress={onClose}>
@@ -47,7 +49,7 @@ export function SelectModal<T extends string>({
           >
             <View className="flex-row items-center justify-between px-5 pt-4">
               <Text className="font-display text-h3 text-primary-light dark:text-primary">{title}</Text>
-              <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" hitSlop={8}>
+              <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={t('common.close')} hitSlop={8}>
                 <Feather name="x" size={22} color="#00E5FF" />
               </Pressable>
             </View>

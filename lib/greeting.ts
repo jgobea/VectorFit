@@ -1,25 +1,21 @@
 // Pure formatting helper — no Supabase/store dependency, so it lives outside
 // hooks/ where INSTRUCTIONS.md reserves business-logic-with-side-effects.
-export function getTimeBasedGreeting(date: Date = new Date()): string {
+// Returns an i18n key (dashboard.greeting.morning/afternoon/evening), not
+// display text — translation happens at the call site (useDashboard.ts),
+// which has access to react-i18next's t().
+export function getTimeOfDayGreetingKey(date: Date = new Date()): 'morning' | 'afternoon' | 'evening' {
   const hour = date.getHours();
-  if (hour < 12) return 'Good Morning';
-  if (hour < 18) return 'Good Afternoon';
-  return 'Good Evening';
+  if (hour < 12) return 'morning';
+  if (hour < 18) return 'afternoon';
+  return 'evening';
 }
 
-const QUOTES = [
-  'Discipline beats motivation on the days motivation doesn’t show up.',
-  'Small reps, done daily, outlast one heroic session.',
-  'Form first, weight later — your future joints thank you.',
-  'The workout you almost skipped is usually the one you needed most.',
-  'Progress is a streak of ordinary days, not one extraordinary one.',
-  'You don’t have to be extreme, just consistent.',
-  'Every rep is a vote for the athlete you’re becoming.',
-];
+// Same reasoning — index into dashboard.quotes at the call site.
+export const QUOTE_COUNT = 7;
 
 // Deterministic per day-of-year so it doesn't flicker on re-render/refresh.
-export function getMotivationalQuote(date: Date = new Date()): string {
+export function getMotivationalQuoteIndex(date: Date = new Date()): number {
   const start = new Date(date.getFullYear(), 0, 0);
   const dayOfYear = Math.floor((date.getTime() - start.getTime()) / 86_400_000);
-  return QUOTES[dayOfYear % QUOTES.length];
+  return dayOfYear % QUOTE_COUNT;
 }

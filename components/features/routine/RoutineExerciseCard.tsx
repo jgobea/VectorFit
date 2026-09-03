@@ -1,5 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 
 import { ExerciseIconPickerModal } from '@/components/features/routine/ExerciseIconPickerModal';
@@ -24,6 +25,7 @@ interface RoutineExerciseCardProps {
 // DraggableExerciseList, which owns the gesture and hands us back a
 // ready-to-render handle.
 export function RoutineExerciseCard({ exercise, dragHandle, onChange, onRemove }: RoutineExerciseCardProps) {
+  const { t } = useTranslation();
   const [iconPickerOpen, setIconPickerOpen] = useState(false);
   const icon: ExerciseIconName = isExerciseIconName(exercise.icon) ? exercise.icon : DEFAULT_EXERCISE_ICON;
   const isTimeBased = exercise.exercise?.measurement_type === 'time';
@@ -35,7 +37,7 @@ export function RoutineExerciseCard({ exercise, dragHandle, onChange, onRemove }
           <Pressable
             onPress={() => setIconPickerOpen(true)}
             accessibilityRole="button"
-            accessibilityLabel="Change exercise icon"
+            accessibilityLabel={t('routineBuilder.changeIcon')}
             className="h-9 w-9 items-center justify-center rounded-full bg-cyan-vivid/10 active:opacity-70"
           >
             <Feather name={icon} size={16} color="#00E5FF" />
@@ -44,7 +46,7 @@ export function RoutineExerciseCard({ exercise, dragHandle, onChange, onRemove }
             </View>
           </Pressable>
           <Text className="flex-1 font-body-semibold text-body text-primary-light dark:text-primary" numberOfLines={1}>
-            {exercise.exercise?.name ?? 'Exercise'}
+            {exercise.exercise?.name ?? t('common.exercise')}
           </Text>
         </View>
         <View className="flex-row items-center gap-1">
@@ -52,7 +54,7 @@ export function RoutineExerciseCard({ exercise, dragHandle, onChange, onRemove }
           <Pressable
             onPress={onRemove}
             accessibilityRole="button"
-            accessibilityLabel="Remove exercise"
+            accessibilityLabel={t('routineBuilder.removeExercise')}
             hitSlop={6}
             className="h-8 w-8 items-center justify-center rounded-lg active:opacity-70"
           >
@@ -62,19 +64,19 @@ export function RoutineExerciseCard({ exercise, dragHandle, onChange, onRemove }
       </View>
 
       <View className="flex-row gap-2">
-        <CompactNumberField label="Sets" value={exercise.sets} min={1} required onChange={(sets) => onChange({ sets })} />
+        <CompactNumberField label={t('routineBuilder.fields.sets')} value={exercise.sets} min={1} required onChange={(sets) => onChange({ sets })} />
         {isTimeBased ? (
           <CompactNumberField
-            label="Sec"
+            label={t('routineBuilder.fields.sec')}
             value={exercise.duration_seconds}
             min={1}
             onChange={(duration_seconds) => onChange({ duration_seconds })}
           />
         ) : (
           <>
-            <CompactNumberField label="Reps" value={exercise.reps} onChange={(reps) => onChange({ reps })} />
+            <CompactNumberField label={t('routineBuilder.fields.reps')} value={exercise.reps} onChange={(reps) => onChange({ reps })} />
             <CompactNumberField
-              label="Kg"
+              label={t('routineBuilder.fields.kg')}
               value={exercise.weight_kg}
               decimals={1}
               onChange={(weight_kg) => onChange({ weight_kg })}
@@ -82,7 +84,7 @@ export function RoutineExerciseCard({ exercise, dragHandle, onChange, onRemove }
           </>
         )}
         <CompactNumberField
-          label="Rest s"
+          label={t('routineBuilder.fields.restS')}
           value={exercise.rest_seconds}
           onChange={(rest_seconds) => onChange({ rest_seconds })}
         />

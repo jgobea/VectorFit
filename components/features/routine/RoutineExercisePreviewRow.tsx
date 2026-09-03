@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 
 import { DEFAULT_EXERCISE_ICON, isExerciseIconName } from '@/constants/exerciseIcons';
@@ -32,14 +33,15 @@ export function RoutineExercisePreviewRow({
   onStartLiveReview,
   onStartTimer,
 }: RoutineExercisePreviewRowProps) {
+  const { t } = useTranslation();
   const isLiveReviewCompatible = !!item.exercise?.quickpose_feature;
   const isTimeBased = item.exercise?.measurement_type === 'time';
   const icon = isExerciseIconName(item.icon) ? item.icon : DEFAULT_EXERCISE_ICON;
   const detail = item.duration_seconds
     ? `${item.duration_seconds}s`
     : [
-        item.sets && `${item.sets} sets`,
-        item.reps && `${item.reps} reps`,
+        item.sets && t('common.setsCount', { n: item.sets }),
+        item.reps && t('common.repsCount', { n: item.reps }),
         item.weight_kg && `${item.weight_kg} kg`,
       ]
         .filter(Boolean)
@@ -56,7 +58,7 @@ export function RoutineExercisePreviewRow({
 
       <View className="flex-1" style={{ opacity: isCompleted ? 0.5 : 1 }}>
         <Text className="font-body-medium text-body text-primary-light dark:text-primary" numberOfLines={1}>
-          {item.exercise?.name ?? 'Exercise'}
+          {item.exercise?.name ?? t('common.exercise')}
         </Text>
         {!!detail && <Text className="font-body text-small text-secondary-light dark:text-secondary">{detail}</Text>}
       </View>
@@ -66,7 +68,7 @@ export function RoutineExercisePreviewRow({
           <Pressable
             onPress={onStartLiveReview}
             accessibilityRole="button"
-            accessibilityLabel={`Start ${item.exercise?.name ?? 'exercise'} in Live Review`}
+            accessibilityLabel={t('dashboard.today.startInLiveReview', { name: item.exercise?.name ?? t('common.exercise') })}
             hitSlop={6}
             className="h-10 w-10 items-center justify-center rounded-full border border-cyan-vivid/40 active:opacity-70"
           >
@@ -77,7 +79,7 @@ export function RoutineExercisePreviewRow({
           <Pressable
             onPress={onStartTimer}
             accessibilityRole="button"
-            accessibilityLabel={`Time ${item.exercise?.name ?? 'exercise'}`}
+            accessibilityLabel={t('dashboard.today.timeExercise', { name: item.exercise?.name ?? t('common.exercise') })}
             hitSlop={6}
             className="h-10 w-10 items-center justify-center rounded-full border border-cyan-vivid/40 active:opacity-70"
           >
@@ -87,7 +89,7 @@ export function RoutineExercisePreviewRow({
         <Pressable
           onPress={onToggleComplete}
           accessibilityRole="button"
-          accessibilityLabel={isCompleted ? 'Mark as not done' : 'Mark as done'}
+          accessibilityLabel={isCompleted ? t('dashboard.today.markNotDone') : t('dashboard.today.markDone')}
           accessibilityState={{ checked: isCompleted }}
           hitSlop={6}
           className={`h-10 w-10 items-center justify-center rounded-full border active:opacity-70 ${

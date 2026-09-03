@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
@@ -36,39 +37,46 @@ export function LiveReviewBottomPanel({
   onStop,
   onFinishSet,
 }: LiveReviewBottomPanelProps) {
+  const { t } = useTranslation();
   // QuickPose only sends a feedbackText string when it has a specific
   // correction to make — no string doesn't mean "I can't see you," it means
   // "nothing to correct right now." Before any frame has been tracked yet
   // (formScore/reps both still 0) that's genuinely "get in frame"; once
   // tracking is live, an empty correction is good news, so the fallback
   // copy shouldn't read like a tracking failure at that point.
+  // Note: feedbackText itself (when present) comes straight from the
+  // QuickPose SDK's own per-frame English corrections — not translatable
+  // from here, unlike everything else on this panel.
   const hasStarted = formScore > 0 || reps > 0;
 
   return (
     <View className="gap-4 bg-black/50 px-4 pb-8 pt-5">
       <View className="flex-row items-end justify-between">
         <View>
-          <Text className="font-body text-small text-secondary">Form Score</Text>
+          <Text className="font-body text-small text-secondary">{t('liveReview.formScore')}</Text>
           <Text className="font-display text-h1 text-cyan-vivid">{formScore}</Text>
         </View>
         <View className="items-end">
-          <Text className="font-body text-small text-secondary">Reps</Text>
+          <Text className="font-body text-small text-secondary">{t('liveReview.reps')}</Text>
           <Text className="font-display text-h1 text-green-neon">
             {reps}
             <Text className="font-body-semibold text-h3 text-secondary"> / {targetReps}</Text>
           </Text>
           <Text className="mt-1 font-body-semibold text-body text-primary">
-            Set {currentSet} / {totalSets}
+            {t('liveReview.setOf', { current: currentSet, total: totalSets })}
           </Text>
         </View>
       </View>
 
       <Text className="min-h-[22px] font-body-semibold text-body text-primary" numberOfLines={2}>
-        {feedbackText ?? (hasStarted ? 'Nice form — keep it up!' : 'Position yourself in frame to begin')}
+        {feedbackText ?? (hasStarted ? t('liveReview.niceForm') : t('liveReview.positionYourself'))}
       </Text>
 
       {isSetComplete && (
-        <Button label={isLastSet ? 'Finish Workout' : `Finish Set ${currentSet}`} onPress={onFinishSet} />
+        <Button
+          label={isLastSet ? t('liveReview.finishWorkout') : t('liveReview.finishSetN', { n: currentSet })}
+          onPress={onFinishSet}
+        />
       )}
 
       <View className="flex-row gap-3">
@@ -78,7 +86,7 @@ export function LiveReviewBottomPanel({
           className="h-14 flex-1 flex-row items-center justify-center gap-2 rounded-xl border border-border active:opacity-70"
         >
           <Feather name={isPaused ? 'play' : 'pause'} size={18} color="#FFFFFF" />
-          <Text className="font-body-semibold text-base text-primary">{isPaused ? 'Resume' : 'Pause'}</Text>
+          <Text className="font-body-semibold text-base text-primary">{isPaused ? t('liveReview.resume') : t('liveReview.pause')}</Text>
         </Pressable>
         <Pressable
           onPress={onStop}
@@ -86,7 +94,7 @@ export function LiveReviewBottomPanel({
           className="h-14 flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-error active:opacity-80"
         >
           <Feather name="square" size={18} color="#FFFFFF" />
-          <Text className="font-body-semibold text-base text-primary">Stop Session</Text>
+          <Text className="font-body-semibold text-base text-primary">{t('liveReview.stopSession')}</Text>
         </Pressable>
       </View>
     </View>

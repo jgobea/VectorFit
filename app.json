@@ -23,7 +23,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.vectorfit.app"
+      "package": "com.vectorfit.app",
+      "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
       "output": "single",
