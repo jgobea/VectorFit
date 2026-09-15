@@ -118,7 +118,7 @@ export default function SignUpScreen() {
                 </View>
                 <Text className="flex-1 font-body text-small text-secondary-light dark:text-secondary">
                   {t('signup.termsPrefix')}{' '}
-                  <Link href="/terms" className="text-cyan-vivid">
+                  <Link href="/terms?from=signup" className="text-cyan-vivid">
                     {t('login.termsLink')}
                   </Link>
                   .

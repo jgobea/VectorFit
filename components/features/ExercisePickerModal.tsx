@@ -2,6 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Dimensions, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import Animated, { SlideInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ExercisePickerRow } from '@/components/features/ExercisePickerRow';
@@ -83,8 +84,13 @@ export function ExercisePickerModal({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    // animationType="fade" (not "slide") so the backdrop darkens the whole
+    // screen at once — see SelectModal.tsx for why "slide" drags the
+    // darkness up from the bottom instead. The sheet still rises on its own
+    // via the Reanimated entering animation below.
+    <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
       <Pressable className="flex-1 justify-end bg-black/60" onPress={onClose}>
+        <Animated.View entering={SlideInDown.duration(250)}>
         <Pressable onPress={(e) => e.stopPropagation()}>
           <SafeAreaView
             edges={['bottom']}
@@ -222,6 +228,7 @@ export function ExercisePickerModal({
             )}
           </SafeAreaView>
         </Pressable>
+        </Animated.View>
       </Pressable>
     </Modal>
   );

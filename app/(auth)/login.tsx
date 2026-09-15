@@ -107,7 +107,7 @@ export default function LoginScreen() {
 
           <Text className="mt-12 text-center font-body text-small text-secondary-light dark:text-secondary">
             {t('login.termsPrefix')}{' '}
-            <Link href="/terms" className="text-cyan-vivid">
+            <Link href="/terms?from=login" className="text-cyan-vivid">
               {t('login.termsLink')}
             </Link>
             .
