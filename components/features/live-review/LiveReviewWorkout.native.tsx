@@ -1,5 +1,6 @@
 import { QuickPoseView } from '@quickpose/react-native';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StatusBar, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -7,6 +8,7 @@ import { LiveReviewBottomPanel } from '@/components/features/live-review/LiveRev
 import { LiveReviewTopBar } from '@/components/features/live-review/LiveReviewTopBar';
 import { RestTimer } from '@/components/features/live-review/RestTimer';
 import { SessionSummaryModal } from '@/components/features/live-review/SessionSummaryModal';
+import { translateExerciseName } from '@/constants/exerciseCatalog';
 import { usePoseSession, type LiveReviewSummary, type SessionConfig } from '@/hooks/usePoseSession';
 import { QUICKPOSE_BASE_FEATURES, QUICKPOSE_OVERLAY_STYLE, QUICKPOSE_SDK_KEY } from '@/lib/quickpose';
 
@@ -34,10 +36,12 @@ interface LiveReviewWorkoutProps {
 // user's own "Save Session" tap, once already told they're done) unmounts
 // this whole component.
 export function LiveReviewWorkout({ config, onExit }: LiveReviewWorkoutProps) {
+  const { t } = useTranslation();
   const session = usePoseSession(config);
   const [stage, setStage] = useState<WorkoutStage>('session');
   const [summary, setSummary] = useState<LiveReviewSummary | null>(null);
 
+  const exerciseName = translateExerciseName(t, config.exercise.name);
   const features = [config.exercise.quickpose_feature!, ...QUICKPOSE_BASE_FEATURES];
 
   const handleFinishSet = () => {
@@ -94,7 +98,7 @@ export function LiveReviewWorkout({ config, onExit }: LiveReviewWorkoutProps) {
       {stage === 'session' && (
         <>
           <SafeAreaView edges={['top']} className="absolute left-0 right-0 top-0">
-            <LiveReviewTopBar exerciseName={config.exercise.name} onClose={handleStop} />
+            <LiveReviewTopBar exerciseName={exerciseName} onClose={handleStop} />
           </SafeAreaView>
           <SafeAreaView edges={['bottom']} className="absolute bottom-0 left-0 right-0">
             <LiveReviewBottomPanel
@@ -116,7 +120,7 @@ export function LiveReviewWorkout({ config, onExit }: LiveReviewWorkoutProps) {
       )}
       <SessionSummaryModal
         visible={stage === 'summary'}
-        exerciseName={config.exercise.name}
+        exerciseName={exerciseName}
         totalSets={config.totalSets}
         summary={summary}
         coachFeedback={session.coachFeedback}

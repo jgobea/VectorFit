@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 
 import { Card } from '@/components/ui/Card';
+import { translateExerciseName } from '@/constants/exerciseCatalog';
 import { DEFAULT_EXERCISE_ICON } from '@/constants/exerciseIcons';
 import type { SuggestedExercise } from '@/lib/exerciseSuggestion';
 
@@ -54,7 +55,7 @@ export function ExerciseSuggestionCard({ exercise, onAdd }: ExerciseSuggestionCa
           <Feather name={DEFAULT_EXERCISE_ICON} size={16} color="#00E5FF" />
         </View>
         <Text className="flex-1 font-body-semibold text-body text-primary-light dark:text-primary" numberOfLines={2}>
-          {exercise.name}
+          {translateExerciseName(t, exercise.name)}
         </Text>
       </View>
 

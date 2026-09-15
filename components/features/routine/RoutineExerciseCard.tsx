@@ -6,6 +6,7 @@ import { Pressable, Text, View } from 'react-native';
 import { ExerciseIconPickerModal } from '@/components/features/routine/ExerciseIconPickerModal';
 import { Card } from '@/components/ui/Card';
 import { CompactNumberField } from '@/components/ui/CompactNumberField';
+import { translateExerciseName } from '@/constants/exerciseCatalog';
 import { DEFAULT_EXERCISE_ICON, isExerciseIconName, type ExerciseIconName } from '@/constants/exerciseIcons';
 import type { RoutineExercise } from '@/types/routine';
 
@@ -46,7 +47,7 @@ export function RoutineExerciseCard({ exercise, dragHandle, onChange, onRemove }
             </View>
           </Pressable>
           <Text className="flex-1 font-body-semibold text-body text-primary-light dark:text-primary" numberOfLines={1}>
-            {exercise.exercise?.name ?? t('common.exercise')}
+            {translateExerciseName(t, exercise.exercise?.name)}
           </Text>
         </View>
         <View className="flex-row items-center gap-1">

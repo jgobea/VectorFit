@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 
 import { Card } from '@/components/ui/Card';
+import { translateExerciseName } from '@/constants/exerciseCatalog';
 import type { Exercise } from '@/types/workout';
 
 interface ExercisePickerRowProps {
@@ -18,11 +19,12 @@ interface ExercisePickerRowProps {
 // created themselves.
 export function ExercisePickerRow({ exercise, isOwnCustom, onSelect, onDelete }: ExercisePickerRowProps) {
   const { t } = useTranslation();
+  const name = translateExerciseName(t, exercise.name);
   return (
     <Card onPress={onSelect} className="flex-row items-center justify-between">
       <View className="flex-1 flex-row items-center gap-2 pr-2">
         <Text className="font-body-semibold text-body text-primary-light dark:text-primary" numberOfLines={1}>
-          {exercise.name}
+          {name}
         </Text>
         {exercise.quickpose_feature && (
           <View className="flex-row items-center gap-1 rounded-full bg-cyan-vivid/10 px-2 py-0.5">
@@ -39,7 +41,7 @@ export function ExercisePickerRow({ exercise, isOwnCustom, onSelect, onDelete }:
             onDelete();
           }}
           accessibilityRole="button"
-          accessibilityLabel={t('exercisePicker.deleteExercise', { name: exercise.name })}
+          accessibilityLabel={t('exercisePicker.deleteExercise', { name })}
           hitSlop={8}
           className="mr-1 h-8 w-8 items-center justify-center rounded-lg active:opacity-70"
         >

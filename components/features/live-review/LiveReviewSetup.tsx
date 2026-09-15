@@ -11,6 +11,7 @@ import { ExercisePickerModal } from '@/components/features/ExercisePickerModal';
 import { RestSlider } from '@/components/features/live-review/RestSlider';
 import { NumberStepperField } from '@/components/ui/NumberStepperField';
 import { InfoModal } from '@/components/ui/InfoModal';
+import { translateExerciseName } from '@/constants/exerciseCatalog';
 import { useExerciseCatalog } from '@/hooks/useExerciseCatalog';
 import type { SessionConfig } from '@/hooks/usePoseSession';
 import type { Exercise } from '@/types/workout';
@@ -97,7 +98,7 @@ export function LiveReviewSetup({ onStart, prefill }: LiveReviewSetupProps) {
             <Text className="font-body-semibold text-small text-secondary-light dark:text-secondary">{t('liveReview.setup.exercise')}</Text>
             <Card onPress={() => setPickerOpen(true)} className="flex-row items-center justify-between">
               <Text className="font-body-semibold text-body text-primary-light dark:text-primary">
-                {exercise?.name ?? t('liveReview.setup.chooseExercise')}
+                {exercise ? translateExerciseName(t, exercise.name) : t('liveReview.setup.chooseExercise')}
               </Text>
               <Feather name="chevron-down" size={20} color="#00E5FF" />
             </Card>

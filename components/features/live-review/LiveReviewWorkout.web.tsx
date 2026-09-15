@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
+import { translateExerciseName } from '@/constants/exerciseCatalog';
 import type { SessionConfig } from '@/hooks/usePoseSession';
 
 interface LiveReviewWorkoutProps {
@@ -21,7 +22,7 @@ export function LiveReviewWorkout({ config, onExit }: LiveReviewWorkoutProps) {
     <View className="flex-1 items-center justify-center gap-4 bg-background px-6">
       <Text className="text-center font-display text-h2 text-primary">{t('liveReview.webUnavailableTitle')}</Text>
       <Text className="text-center font-body text-body text-secondary">
-        {t('liveReview.webUnavailableMessage', { name: config.exercise.name })}
+        {t('liveReview.webUnavailableMessage', { name: translateExerciseName(t, config.exercise.name) })}
       </Text>
       <Button label={t('common.back')} variant="secondary" onPress={onExit} />
     </View>

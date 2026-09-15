@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ExercisePickerRow } from '@/components/features/ExercisePickerRow';
 import { Button } from '@/components/ui/Button';
+import { translateExerciseCategory } from '@/constants/exerciseCatalog';
 import type { Exercise } from '@/types/workout';
 
 interface ExercisePickerModalProps {
@@ -209,7 +210,10 @@ export function ExercisePickerModal({
                 {groups.map(([category, items]) => (
                   <View key={category} className="gap-2">
                     <Text className="font-body-semibold text-small text-secondary-light dark:text-secondary">
-                      {(category === UNCATEGORIZED ? t('exercisePicker.otherCategory') : category).toUpperCase()}
+                      {(category === UNCATEGORIZED
+                        ? t('exercisePicker.otherCategory')
+                        : (translateExerciseCategory(t, category) ?? category)
+                      ).toUpperCase()}
                     </Text>
                     <View className="gap-2">
                       {items.map((item) => (

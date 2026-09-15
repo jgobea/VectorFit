@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 
+import { translateExerciseName } from '@/constants/exerciseCatalog';
 import type { ScheduledDay } from '@/lib/routineSchedule';
 
 // Hand-rolled instead of toLocaleDateString(undefined, {...}) — Hermes's
@@ -28,7 +29,8 @@ export function UpcomingRoutineDayRow({ scheduled }: UpcomingRoutineDayRowProps)
   const preview = day.exercises
     .slice(0, 3)
     .map((e) => e.exercise?.name)
-    .filter(Boolean)
+    .filter((name): name is string => !!name)
+    .map((name) => translateExerciseName(t, name))
     .join(', ');
 
   if (day.is_rest_day) {
@@ -78,7 +80,7 @@ export function UpcomingRoutineDayRow({ scheduled }: UpcomingRoutineDayRowProps)
           )}
           {day.exercises.map((e) => (
             <Text key={e.id} className="font-body text-small text-secondary-light dark:text-secondary">
-              • {e.exercise?.name ?? t('common.exercise')}
+              • {translateExerciseName(t, e.exercise?.name)}
               {e.sets && e.reps ? ` — ${e.sets}×${e.reps}` : ''}
             </Text>
           ))}

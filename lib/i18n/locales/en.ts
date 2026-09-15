@@ -235,6 +235,48 @@ export default {
     otherCategory: 'Other',
     deleteExercise: 'Delete {{name}}',
   },
+  // Exact names from the seeded exercise catalog (supabase/migrations'
+  // 20260818210000_seed_exercises.sql and
+  // 20260827090000_seed_non_quickpose_exercises.sql) — see
+  // constants/exerciseCatalog.ts for the lookup that maps a catalog row's
+  // raw `name` to one of these keys. Not used for user-created custom
+  // exercises, which keep whatever the user typed.
+  exercises: {
+    names: {
+      squats: 'Squats',
+      pushUps: 'Push Ups',
+      jumpingJacks: 'Jumping Jacks',
+      sumoSquats: 'Sumo Squats',
+      lunges: 'Lunges',
+      sitUps: 'Sit Ups',
+      cobraWings: 'Cobra Wings',
+      plank: 'Plank',
+      legRaises: 'Leg Raises',
+      gluteBridge: 'Glute Bridge',
+      overheadDumbbellPress: 'Overhead Dumbbell Press',
+      vUps: 'V-Ups',
+      lateralRaises: 'Lateral Raises',
+      frontRaises: 'Front Raises',
+      hipAbductionStanding: 'Hip Abduction Standing',
+      sideLunges: 'Side Lunges',
+      bicepCurls: 'Bicep Curls',
+      kneeRaisesBilateral: 'Knee Raises Bilateral',
+      benchPress: 'Bench Press',
+      latPulldown: 'Lat Pulldown',
+      barbellRow: 'Barbell Row',
+      tricepPushdown: 'Tricep Pushdown',
+      shoulderPressMachine: 'Shoulder Press Machine',
+      deadlift: 'Deadlift',
+      legPress: 'Leg Press',
+      legCurl: 'Leg Curl',
+      calfRaises: 'Calf Raises',
+      cableCrunch: 'Cable Crunch',
+      russianTwist: 'Russian Twist',
+      kettlebellSwing: 'Kettlebell Swing',
+      treadmillRun: 'Treadmill Run',
+      stationaryBike: 'Stationary Bike',
+    },
+  },
   terms: {
     title: 'Terms & Privacy',
   },
@@ -325,6 +367,7 @@ export default {
       lowerBody: 'Lower Body',
       core: 'Core',
       fullBody: 'Full Body',
+      cardio: 'Cardio',
       other: 'Other',
     },
   },

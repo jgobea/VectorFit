@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 
 import { DEFAULT_EXERCISE_ICON, isExerciseIconName } from '@/constants/exerciseIcons';
+import { translateExerciseName } from '@/constants/exerciseCatalog';
 import type { RoutineExercise } from '@/types/routine';
 
 const DIFFICULTY_COLOR: Record<string, string> = {
@@ -37,6 +38,7 @@ export function RoutineExercisePreviewRow({
   const isLiveReviewCompatible = !!item.exercise?.quickpose_feature;
   const isTimeBased = item.exercise?.measurement_type === 'time';
   const icon = isExerciseIconName(item.icon) ? item.icon : DEFAULT_EXERCISE_ICON;
+  const name = translateExerciseName(t, item.exercise?.name);
   const detail = item.duration_seconds
     ? `${item.duration_seconds}s`
     : [
@@ -58,7 +60,7 @@ export function RoutineExercisePreviewRow({
 
       <View className="flex-1" style={{ opacity: isCompleted ? 0.5 : 1 }}>
         <Text className="font-body-medium text-body text-primary-light dark:text-primary" numberOfLines={1}>
-          {item.exercise?.name ?? t('common.exercise')}
+          {name}
         </Text>
         {!!detail && <Text className="font-body text-small text-secondary-light dark:text-secondary">{detail}</Text>}
       </View>
@@ -68,7 +70,7 @@ export function RoutineExercisePreviewRow({
           <Pressable
             onPress={onStartLiveReview}
             accessibilityRole="button"
-            accessibilityLabel={t('dashboard.today.startInLiveReview', { name: item.exercise?.name ?? t('common.exercise') })}
+            accessibilityLabel={t('dashboard.today.startInLiveReview', { name })}
             hitSlop={6}
             className="h-10 w-10 items-center justify-center rounded-full border border-cyan-vivid/40 active:opacity-70"
           >
@@ -79,7 +81,7 @@ export function RoutineExercisePreviewRow({
           <Pressable
             onPress={onStartTimer}
             accessibilityRole="button"
-            accessibilityLabel={t('dashboard.today.timeExercise', { name: item.exercise?.name ?? t('common.exercise') })}
+            accessibilityLabel={t('dashboard.today.timeExercise', { name })}
             hitSlop={6}
             className="h-10 w-10 items-center justify-center rounded-full border border-cyan-vivid/40 active:opacity-70"
           >

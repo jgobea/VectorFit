@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Card } from '@/components/ui/Card';
 import { InfoModal } from '@/components/ui/InfoModal';
+import { translateExerciseName } from '@/constants/exerciseCatalog';
 import { useAddSuggestedExercise } from '@/hooks/useAddSuggestedExercise';
 import type { SuggestedExercise } from '@/lib/exerciseSuggestion';
 
@@ -63,7 +64,7 @@ export function AddToRoutineModal({ exercise, onClose }: AddToRoutineModalProps)
                 </Pressable>
               </View>
               <Text className="px-5 pt-1 font-body text-small text-secondary-light dark:text-secondary">
-                {exercise.name}
+                {translateExerciseName(t, exercise.name)}
               </Text>
 
               {isLoading || !routine ? (

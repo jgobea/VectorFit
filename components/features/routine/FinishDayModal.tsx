@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
+import { translateExerciseName } from '@/constants/exerciseCatalog';
 import type { RoutineExercise } from '@/types/routine';
 
 interface FinishDayModalProps {
@@ -31,7 +32,7 @@ export function FinishDayModal({ visible, exercises, isSubmitting, onCancel, onC
             <View className="gap-1.5">
               {exercises.map((e) => (
                 <Text key={e.id} className="font-body text-body text-primary-light dark:text-primary">
-                  • {e.exercise?.name ?? t('common.exercise')}
+                  • {translateExerciseName(t, e.exercise?.name)}
                 </Text>
               ))}
             </View>

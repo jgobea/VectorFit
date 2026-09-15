@@ -6,6 +6,7 @@ import { Modal, Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { translateExerciseName } from '@/constants/exerciseCatalog';
 import type { RoutineExercise } from '@/types/routine';
 
 interface ExerciseTimerModalProps {
@@ -122,7 +123,7 @@ export function ExerciseTimerModal({ visible, exercise, onClose, onComplete }: E
         >
           <View className="w-full flex-row items-center justify-between">
             <Text className="flex-1 font-display text-h3 text-primary-light dark:text-primary" numberOfLines={1}>
-              {exercise.exercise?.name ?? t('common.exercise')}
+              {translateExerciseName(t, exercise.exercise?.name)}
             </Text>
             <Pressable onPress={requestClose} accessibilityRole="button" accessibilityLabel={t('common.close')} hitSlop={8}>
               <Feather name="x" size={22} color="#A0A0A8" />
