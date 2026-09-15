@@ -15,15 +15,3 @@ export interface Exercise {
   measurement_type: 'reps' | 'time';
   time_mode: 'countdown' | 'stopwatch' | null;
 }
-
-export interface WorkoutSession {
-  id: string;
-  user_id: string;
-  workout_id: string | null;
-  status: 'in_progress' | 'completed' | 'cancelled';
-  started_at: string;
-  ended_at: string | null;
-  calories_burned: number | null;
-  duration_seconds: number | null;
-  notes: string | null;
-}

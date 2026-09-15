@@ -7,8 +7,7 @@ interface DayStatusToggleProps {
 }
 
 // Two-segment pill switch — Rest / Training — DESIGN_SPEC.md's brand
-// gradient marks the selected side, same visual language as ChipGroup's
-// selected state.
+// gradient marks the selected side.
 export function DayStatusToggle({ isRestDay, onChange }: DayStatusToggleProps) {
   const { t } = useTranslation();
   return (
