@@ -1,9 +1,11 @@
 import { Feather } from '@expo/vector-icons';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, ScrollView, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import type { LiveReviewSummary } from '@/hooks/usePoseSession';
 
 interface SessionSummaryModalProps {
@@ -14,6 +16,32 @@ interface SessionSummaryModalProps {
   coachFeedback: string | null;
   isFetchingCoachFeedback: boolean;
   onDone: () => void;
+  onDiscard: () => void;
+}
+
+interface StatRowProps {
+  icon: keyof typeof Feather.glyphMap;
+  value: string | number;
+  label: string;
+}
+
+// One full-width row per stat instead of a side-by-side grid — four
+// squeezed-in cards read as cramped, especially with a 2-3 digit value plus
+// a wrapping label fighting for the same small width.
+function StatRow({ icon, value, label }: StatRowProps) {
+  return (
+    <View className="flex-row items-center gap-3 py-2.5">
+      <View className="h-10 w-10 items-center justify-center rounded-full bg-cyan-vivid/10">
+        <Feather name={icon} size={18} color="#00E5FF" />
+      </View>
+      <Text className="flex-1 font-body text-body text-secondary-light dark:text-secondary">{label}</Text>
+      <Text className="font-display text-h3 text-primary-light dark:text-primary">{value}</Text>
+    </View>
+  );
+}
+
+function Separator() {
+  return <View className="h-px bg-border-light dark:bg-border" />;
 }
 
 // DESIGN_SPEC.md §D.6: post-workout summary — total reps, avg form score,
@@ -31,8 +59,11 @@ export function SessionSummaryModal({
   coachFeedback,
   isFetchingCoachFeedback,
   onDone,
+  onDiscard,
 }: SessionSummaryModalProps) {
   const { t } = useTranslation();
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false);
+
   return (
     <Modal visible={visible} animationType="fade" transparent>
       <View className="flex-1 items-center justify-center bg-black/70 px-6">
@@ -50,30 +81,19 @@ export function SessionSummaryModal({
               </Text>
             </View>
 
-            <View className="flex-row flex-wrap gap-3">
-              <Card className="flex-1 items-center gap-1">
-                <Text className="font-display text-h2 text-cyan-vivid">{summary?.totalReps ?? 0}</Text>
-                <Text className="font-body text-small text-secondary-light dark:text-secondary">{t('liveReview.summary.totalReps')}</Text>
-              </Card>
-              <Card className="flex-1 items-center gap-1">
-                <Text className="font-display text-h2 text-green-neon">
-                  {summary?.setsCompleted ?? 0}/{totalSets}
-                </Text>
-                <Text className="font-body text-small text-secondary-light dark:text-secondary">{t('liveReview.summary.sets')}</Text>
-              </Card>
-              <Card className="flex-1 items-center gap-1">
-                <Text className="font-display text-h2 text-primary-light dark:text-primary">
-                  {summary?.avgFormScore ?? '—'}
-                </Text>
-                <Text className="font-body text-small text-secondary-light dark:text-secondary">{t('liveReview.summary.avgScore')}</Text>
-              </Card>
-              <Card className="flex-1 items-center gap-1">
-                <Text className="font-display text-h2 text-primary-light dark:text-primary">
-                  {summary?.bestRepScore ?? '—'}
-                </Text>
-                <Text className="font-body text-small text-secondary-light dark:text-secondary">{t('liveReview.summary.bestRep')}</Text>
-              </Card>
-            </View>
+            <Card className="py-1">
+              <StatRow icon="check-circle" value={summary?.totalReps ?? 0} label={t('liveReview.summary.totalReps')} />
+              <Separator />
+              <StatRow
+                icon="layers"
+                value={`${summary?.setsCompleted ?? 0}/${totalSets}`}
+                label={t('liveReview.summary.sets')}
+              />
+              <Separator />
+              <StatRow icon="bar-chart-2" value={summary?.avgFormScore ?? '—'} label={t('liveReview.summary.avgScore')} />
+              <Separator />
+              <StatRow icon="award" value={summary?.bestRepScore ?? '—'} label={t('liveReview.summary.bestRep')} />
+            </Card>
 
             {(isFetchingCoachFeedback || coachFeedback) && (
               <View className="flex-row items-start gap-2 rounded-xl border border-cyan-vivid/30 bg-cyan-vivid/10 px-4 py-3">
@@ -84,10 +104,26 @@ export function SessionSummaryModal({
               </View>
             )}
 
-            <Button label={t('liveReview.summary.saveSession')} onPress={onDone} />
+            <View className="gap-3">
+              <Button label={t('liveReview.summary.saveSession')} onPress={onDone} />
+              <Button label={t('liveReview.summary.discardSession')} variant="secondary" onPress={() => setConfirmingDiscard(true)} />
+            </View>
           </ScrollView>
         </View>
       </View>
+
+      <ConfirmModal
+        visible={confirmingDiscard}
+        title={t('liveReview.summary.discardConfirmTitle')}
+        message={t('liveReview.summary.discardConfirmMessage')}
+        confirmLabel={t('liveReview.summary.discardConfirmButton')}
+        destructive
+        onCancel={() => setConfirmingDiscard(false)}
+        onConfirm={() => {
+          setConfirmingDiscard(false);
+          onDiscard();
+        }}
+      />
     </Modal>
   );
 }

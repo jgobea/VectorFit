@@ -65,6 +65,10 @@ export function LiveReviewWorkout({ config, onExit }: LiveReviewWorkoutProps) {
     });
   };
 
+  const handleDiscard = () => {
+    session.discardSession().then(onExit);
+  };
+
   return (
     <View className="flex-1 bg-black">
       <StatusBar hidden />
@@ -118,6 +122,7 @@ export function LiveReviewWorkout({ config, onExit }: LiveReviewWorkoutProps) {
         coachFeedback={session.coachFeedback}
         isFetchingCoachFeedback={session.isFetchingCoachFeedback}
         onDone={onExit}
+        onDiscard={handleDiscard}
       />
     </View>
   );

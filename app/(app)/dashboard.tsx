@@ -12,6 +12,7 @@ import { DashboardHeader } from '@/components/features/DashboardHeader';
 import { QuickAccessGrid } from '@/components/features/QuickAccessGrid';
 import { StatsSummaryCard } from '@/components/features/StatsSummaryCard';
 import { NoRoutineState } from '@/components/features/routine/NoRoutineState';
+import { RoutineSectionSkeleton } from '@/components/features/routine/RoutineSectionSkeleton';
 import { TodaysRoutineSection } from '@/components/features/routine/TodaysRoutineSection';
 import { UpcomingRoutineList } from '@/components/features/routine/UpcomingRoutineList';
 import { useDashboard } from '@/hooks/useDashboard';
@@ -71,6 +72,12 @@ export default function DashboardScreen() {
             todaysLoadKg={todaysLoadKg}
             goalWorkoutsPerWeek={profile?.workout_frequency_days ?? 3}
           />
+
+          {/* !routine guards both branches below so a background reload
+              (useFocusEffect's reloadRoutine on tab refocus) never hides
+              already-loaded content behind the skeleton again — only the
+              true first load, before any routine has arrived, shows it. */}
+          {isRoutineLoading && !routine && <RoutineSectionSkeleton />}
 
           {!isRoutineLoading && !routine && <NoRoutineState />}
 

@@ -207,6 +207,10 @@ export default {
       avgScore: 'Avg Score',
       bestRep: 'Best Rep',
       saveSession: 'Save Session',
+      discardSession: 'Discard Session',
+      discardConfirmTitle: 'Discard this session?',
+      discardConfirmMessage: "This workout won't be saved to your history and won't count toward today's routine.",
+      discardConfirmButton: 'Discard',
     },
     setup: {
       infoLabel: 'Live Review info',

@@ -204,6 +204,10 @@ export default {
       avgScore: 'Puntaje promedio',
       bestRep: 'Mejor repetición',
       saveSession: 'Guardar sesión',
+      discardSession: 'Olvidar sesión',
+      discardConfirmTitle: '¿Olvidar esta sesión?',
+      discardConfirmMessage: 'Este entrenamiento no se guardará en tu historial ni contará para la rutina de hoy.',
+      discardConfirmButton: 'Olvidar',
     },
     setup: {
       infoLabel: 'Información de Revisión en vivo',

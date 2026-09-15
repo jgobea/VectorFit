@@ -6,20 +6,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { fetchSetCoachFeedback, type FeedbackCount } from '@/lib/liveReviewCoach';
 import { toLocalDateKey } from '@/lib/routineSchedule';
+import { SPEECH_LANGUAGE_CODES } from '@/lib/speechLanguage';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { useUserStore } from '@/stores/userStore';
 import type { Exercise } from '@/types/workout';
-
-// BCP-47 locale codes expo-speech expects — keyed the same as
-// supabase/functions/chat/index.ts's LANGUAGE_NAMES / users.language_preference.
-const SPEECH_LANGUAGE_CODES: Record<string, string> = {
-  en: 'en-US',
-  es: 'es-ES',
-  fr: 'fr-FR',
-  de: 'de-DE',
-  pt: 'pt-BR',
-};
 
 // Top N distinct form corrections by how often they fired this set — what
 // actually goes to the coach-feedback edge function. The raw form score
@@ -90,6 +81,11 @@ export function usePoseSession(config: SessionConfig) {
   // otherwise defaults to `now()` in the DB, which lands within milliseconds
   // of `ended_at` and makes every session's duration read as ~0.
   const startedAtRef = useRef(new Date().toISOString());
+  // Set by finishWorkout once it persists — lets discardSession (the
+  // summary screen's "Discard Session" button) undo exactly what got
+  // written, without re-deriving any of it from scratch.
+  const savedPoseSessionIdRef = useRef<string | null>(null);
+  const createdCompletionRef = useRef(false);
 
   const [currentSet, setCurrentSet] = useState(1);
   const [reps, setReps] = useState(0);
@@ -242,25 +238,42 @@ export function usePoseSession(config: SessionConfig) {
     }
 
     if (userId) {
-      const { error } = await supabase.from('pose_sessions').insert({
-        user_id: userId,
-        exercise_id: config.exercise.id,
-        started_at: startedAtRef.current,
-        ended_at: new Date().toISOString(),
-        total_reps: summary.totalReps,
-        target_reps: config.targetReps * config.totalSets,
-        avg_form_score: summary.avgFormScore,
-        best_rep_score: summary.bestRepScore,
-        feedback_summary: summary.feedbackSummary,
-      });
+      const { data: inserted, error } = await supabase
+        .from('pose_sessions')
+        .insert({
+          user_id: userId,
+          exercise_id: config.exercise.id,
+          started_at: startedAtRef.current,
+          ended_at: new Date().toISOString(),
+          total_reps: summary.totalReps,
+          target_reps: config.targetReps * config.totalSets,
+          avg_form_score: summary.avgFormScore,
+          best_rep_score: summary.bestRepScore,
+          feedback_summary: summary.feedbackSummary,
+        })
+        .select('id')
+        .single();
       if (error) console.error('Failed to save pose session:', error);
+      savedPoseSessionIdRef.current = inserted?.id ?? null;
 
       if (config.routineExerciseId) {
+        const completedDate = toLocalDateKey(new Date());
+        // Only undo this on discard if THIS session is what created it —
+        // if the exercise was already checked off today (e.g. a second
+        // Live Review run), discarding shouldn't erase that earlier mark.
+        const { data: existingCompletion } = await supabase
+          .from('routine_exercise_completions')
+          .select('routine_exercise_id')
+          .eq('routine_exercise_id', config.routineExerciseId)
+          .eq('completed_date', completedDate)
+          .maybeSingle();
+        createdCompletionRef.current = !existingCompletion;
+
         const { error: completionError } = await supabase.from('routine_exercise_completions').upsert(
           {
             user_id: userId,
             routine_exercise_id: config.routineExerciseId,
-            completed_date: toLocalDateKey(new Date()),
+            completed_date: completedDate,
           },
           { onConflict: 'routine_exercise_id,completed_date' }
         );
@@ -281,6 +294,30 @@ export function usePoseSession(config: SessionConfig) {
     userId,
   ]);
 
+  // "Discard Session" on the summary screen — finishWorkout already
+  // persisted everything by the time that screen shows, so discarding
+  // means undoing exactly that: delete the pose_sessions row, and the
+  // routine-completion mark only if this session is what created it.
+  const discardSession = useCallback(async () => {
+    const poseSessionId = savedPoseSessionIdRef.current;
+    if (poseSessionId) {
+      const { error } = await supabase.from('pose_sessions').delete().eq('id', poseSessionId);
+      if (error) console.error('Failed to discard pose session:', error);
+    }
+
+    if (createdCompletionRef.current && config.routineExerciseId) {
+      const { error } = await supabase
+        .from('routine_exercise_completions')
+        .delete()
+        .eq('routine_exercise_id', config.routineExerciseId)
+        .eq('completed_date', toLocalDateKey(new Date()));
+      if (error) console.error('Failed to undo routine completion:', error);
+    }
+
+    savedPoseSessionIdRef.current = null;
+    createdCompletionRef.current = false;
+  }, [config.routineExerciseId]);
+
   return {
     currentSet,
     totalSets: config.totalSets,
@@ -297,5 +334,6 @@ export function usePoseSession(config: SessionConfig) {
     onUpdate,
     finishSet,
     finishWorkout,
+    discardSession,
   };
 }

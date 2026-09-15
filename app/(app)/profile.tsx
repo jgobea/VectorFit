@@ -39,6 +39,7 @@ export default function ProfileScreen() {
     cancelEditing,
     patchDraft,
     save,
+    saveField,
   } = useProfile();
   const { pickAvatar, isUploading } = useAvatarUpload(userId);
   const { stats } = useProfileStats(userId);
@@ -116,9 +117,9 @@ export default function ProfileScreen() {
           onToggleEdit={isEditing ? requestCancel : startEditing}
         />
 
-        <PhysicalStatsSection profile={displayed} isEditing={isEditing} onChange={patchDraft} />
-        <FitnessInfoSection profile={displayed} isEditing={isEditing} onChange={patchDraft} />
-        <AITrainerSettingsSection profile={displayed} isEditing={isEditing} onChange={patchDraft} />
+        <PhysicalStatsSection profile={displayed} isEditing={isEditing} onChange={patchDraft} onQuickSave={saveField} isSavingField={isSaving} />
+        <FitnessInfoSection profile={displayed} isEditing={isEditing} onChange={patchDraft} onQuickSave={saveField} isSavingField={isSaving} />
+        <AITrainerSettingsSection profile={displayed} isEditing={isEditing} onChange={patchDraft} onQuickSave={saveField} isSavingField={isSaving} />
         <WorkoutHistorySection stats={stats} />
         <AccountSection
           email={email}

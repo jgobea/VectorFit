@@ -3,7 +3,9 @@ import { View } from 'react-native';
 
 import { LabeledSlider } from '@/components/ui/LabeledSlider';
 import { RadioGroup } from '@/components/ui/RadioGroup';
+import { ToggleRow } from '@/components/ui/ToggleRow';
 import { COACHING_STYLE_OPTIONS, INTENSITY_LABEL_KEYS, INTENSITY_LEVELS } from '@/constants/profileOptions';
+import { playVoiceSample } from '@/lib/voiceSample';
 import type { OnboardingDraft } from '@/types/onboarding';
 
 interface StepProps {
@@ -31,6 +33,26 @@ export function CoachStyleStep({ draft, onChange }: StepProps) {
         options={coachingStyleOptions}
         onChange={(ai_coaching_style) => onChange({ ai_coaching_style })}
       />
+      <ToggleRow
+        label={t('profile.aiSettings.voiceFeedback')}
+        value={draft.ai_voice_feedback_enabled}
+        onChange={(ai_voice_feedback_enabled) => {
+          onChange({ ai_voice_feedback_enabled });
+          if (ai_voice_feedback_enabled) playVoiceSample(undefined, draft.ai_voice_volume);
+        }}
+      />
+      {draft.ai_voice_feedback_enabled && (
+        <LabeledSlider
+          label={t('profile.aiSettings.voiceVolume')}
+          value={draft.ai_voice_volume}
+          min={0}
+          max={100}
+          step={5}
+          formatValue={(v) => `${Math.round(v)}%`}
+          onChange={(v) => onChange({ ai_voice_volume: Math.round(v) })}
+          onSlidingComplete={(v) => playVoiceSample(undefined, Math.round(v))}
+        />
+      )}
     </View>
   );
 }

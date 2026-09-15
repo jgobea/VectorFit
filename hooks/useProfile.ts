@@ -61,6 +61,38 @@ export function useProfile() {
     setDraft((prev) => (prev ? { ...prev, ...patch } : prev));
   }, []);
 
+  // Immediate single-field (or a few related fields, e.g. weight) save —
+  // Profile's per-row "quick edit" modals use this instead of the
+  // draft/isEditing flow above, so tapping one setting doesn't require
+  // entering edit mode for the whole page first.
+  const saveField = useCallback(
+    async (patch: Partial<UserProfile>) => {
+      if (!userId || !profile) return false;
+      setIsSaving(true);
+
+      const weightChanged = 'weight_kg' in patch && patch.weight_kg !== profile.weight_kg;
+
+      const { data, error: saveError } = await supabase
+        .from('users')
+        .update({ ...patch, ...(weightChanged ? { weight_updated_at: new Date().toISOString() } : {}) })
+        .eq('id', userId)
+        .select()
+        .single();
+
+      setIsSaving(false);
+
+      if (saveError) {
+        setError(saveError.message);
+        return false;
+      }
+
+      setProfile(data);
+      setSuccessMessage(t('profile.updated'));
+      return true;
+    },
+    [userId, profile, setProfile, t]
+  );
+
   const save = useCallback(async () => {
     if (!userId || !draft) return;
     setIsSaving(true);
@@ -111,5 +143,6 @@ export function useProfile() {
     cancelEditing,
     patchDraft,
     save,
+    saveField,
   };
 }
