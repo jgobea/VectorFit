@@ -92,8 +92,9 @@ export default {
       'You don’t have to be extreme, just consistent.',
       'Every rep is a vote for the athlete you’re becoming.',
     ],
-    notificationsTitle: 'Notifications',
-    notificationsMessage: 'Nothing new yet — check back after your next workout.',
+    guide: {
+      openLabel: 'How VectorFit works',
+    },
     todaysWorkout: "Today's Workout",
     editTodaysWorkout: "Edit today's workout",
     stats: {

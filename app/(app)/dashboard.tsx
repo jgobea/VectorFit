@@ -1,13 +1,14 @@
 import { Feather } from '@expo/vector-icons';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useFocusEffect } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
-import { useCallback } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AchievementSection } from '@/components/features/AchievementSection';
+import { AppGuideModal } from '@/components/features/dashboard/AppGuideModal';
 import { DashboardHeader } from '@/components/features/DashboardHeader';
 import { QuickAccessGrid } from '@/components/features/QuickAccessGrid';
 import { StatsSummaryCard } from '@/components/features/StatsSummaryCard';
@@ -23,7 +24,19 @@ import { getTodayRoutineDay, getUpcomingRoutineDays } from '@/lib/routineSchedul
 
 export default function DashboardScreen() {
   const router = useRouter();
+  const { showGuide } = useLocalSearchParams<{ showGuide?: string }>();
   const { t } = useTranslation();
+  const [guideOpen, setGuideOpen] = useState(false);
+
+  // Auto-opens once, right after onboarding finishes and Home renders for
+  // the first time for a brand-new account — app/onboarding.tsx's finish()
+  // passes this param on the very first navigation into the tabs. Cleared
+  // immediately so it doesn't reopen on a later remount/deep-link replay.
+  useEffect(() => {
+    if (showGuide !== 'true') return;
+    setGuideOpen(true);
+    router.setParams({ showGuide: undefined });
+  }, [showGuide, router]);
   // The tab bar now floats (position: 'absolute' in app/(app)/_layout.tsx)
   // instead of reserving its own space, so scroll content needs its own
   // bottom padding to clear it — same reasoning on every Tabs.Screen.
@@ -56,7 +69,7 @@ export default function DashboardScreen() {
     // 'bottom' dropped from edges: the Tabs bar below this screen already
     // covers the bottom safe-area inset — adding it here double-pads.
     <SafeAreaView className="flex-1 bg-background-light dark:bg-background" edges={['top']}>
-      <DashboardHeader greeting={greeting} avatarUrl={profile?.avatar_url ?? null} />
+      <DashboardHeader greeting={greeting} avatarUrl={profile?.avatar_url ?? null} onInfoPress={() => setGuideOpen(true)} />
 
       <ScrollView
         contentContainerClassName="gap-section"
@@ -121,6 +134,8 @@ export default function DashboardScreen() {
           <AchievementSection stats={stats} goalDays={profile?.workout_frequency_days ?? 3} quote={quote} />
         </View>
       </ScrollView>
+
+      <AppGuideModal visible={guideOpen} onClose={() => setGuideOpen(false)} />
     </SafeAreaView>
   );
 }

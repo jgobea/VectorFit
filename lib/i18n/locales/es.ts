@@ -89,8 +89,9 @@ export default {
       'No tienes que ser extremo, solo constante.',
       'Cada repetición es un voto por el atleta en el que te estás convirtiendo.',
     ],
-    notificationsTitle: 'Notificaciones',
-    notificationsMessage: 'Nada nuevo todavía — vuelve después de tu próximo entrenamiento.',
+    guide: {
+      openLabel: 'Cómo funciona VectorFit',
+    },
     todaysWorkout: 'Entrenamiento de hoy',
     editTodaysWorkout: 'Editar entrenamiento de hoy',
     stats: {

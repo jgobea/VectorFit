@@ -2,19 +2,20 @@ import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 interface DashboardHeaderProps {
   greeting: string;
   avatarUrl: string | null;
+  onInfoPress: () => void;
 }
 
 // DESIGN_SPEC.md §B.1: sticky header — greeting, profile icon (→ User Info),
-// notification bell. Wordmark reuses login's treatment (bold "vector" +
-// light "Fit") so the brand mark is consistent app-wide. Notifications
-// aren't a scoped feature yet, so the bell is a real, acknowledged control
-// rather than an inert decoration.
-export function DashboardHeader({ greeting, avatarUrl }: DashboardHeaderProps) {
+// and an info button opening the app guide (AppGuideModal) — a real,
+// useful control, replacing an earlier placeholder notification bell that
+// only opened a stub alert. Wordmark reuses login's treatment (bold
+// "vector" + light "Fit") so the brand mark is consistent app-wide.
+export function DashboardHeader({ greeting, avatarUrl, onInfoPress }: DashboardHeaderProps) {
   const router = useRouter();
   const { t } = useTranslation();
 
@@ -27,13 +28,13 @@ export function DashboardHeader({ greeting, avatarUrl }: DashboardHeaderProps) {
         </Text>
         <View className="flex-row items-center gap-3">
           <Pressable
-            onPress={() => Alert.alert(t('dashboard.notificationsTitle'), t('dashboard.notificationsMessage'))}
+            onPress={onInfoPress}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel={t('dashboard.notificationsTitle')}
+            accessibilityLabel={t('dashboard.guide.openLabel')}
             className="h-11 w-11 items-center justify-center rounded-full border border-border-light active:opacity-70 dark:border-border"
           >
-            <Feather name="bell" size={20} color="#A0A0A8" />
+            <Feather name="info" size={20} color="#A0A0A8" />
           </Pressable>
           <Pressable
             onPress={() => router.push('/(app)/profile')}

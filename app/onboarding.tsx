@@ -90,7 +90,9 @@ export default function OnboardingScreen() {
       .single();
     setIsSaving(false);
     if (data) setProfile(data);
-    router.replace('/(app)/dashboard');
+    // showGuide: dashboard.tsx auto-opens AppGuideModal once on seeing this,
+    // then clears it — a brand-new account's first look at Home.
+    router.replace({ pathname: '/(app)/dashboard', params: { showGuide: 'true' } });
   };
 
   const steps = [
