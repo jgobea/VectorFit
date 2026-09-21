@@ -21,22 +21,32 @@ import { useRoutine } from '@/hooks/useRoutine';
 import { useTodayCompletions } from '@/hooks/useTodayCompletions';
 import { calculateLoadKg } from '@/lib/routineLoad';
 import { getTodayRoutineDay, getUpcomingRoutineDays } from '@/lib/routineSchedule';
+import { useAppGuideStore } from '@/stores/appGuideStore';
 
 export default function DashboardScreen() {
   const router = useRouter();
   const { showGuide } = useLocalSearchParams<{ showGuide?: string }>();
   const { t } = useTranslation();
   const [guideOpen, setGuideOpen] = useState(false);
+  const hasSeenGuide = useAppGuideStore((s) => s.hasSeenGuide);
+  const markGuideSeen = useAppGuideStore((s) => s.markGuideSeen);
 
   // Auto-opens once, right after onboarding finishes and Home renders for
   // the first time for a brand-new account — app/onboarding.tsx's finish()
-  // passes this param on the very first navigation into the tabs. Cleared
-  // immediately so it doesn't reopen on a later remount/deep-link replay.
+  // passes this param on the very first navigation into the tabs. The param
+  // alone isn't reliable as a one-shot trigger: Dashboard is a Tabs screen
+  // that stays mounted, but navigating to Progress/Routine Builder (both
+  // root-level routes outside the tab navigator) and back could resurface
+  // the same ?showGuide=true param and reopen the modal every time. The
+  // persisted hasSeenGuide flag (stores/appGuideStore.ts) is the real
+  // "only once" guard; the param just triggers the initial check.
   useEffect(() => {
     if (showGuide !== 'true') return;
-    setGuideOpen(true);
     router.setParams({ showGuide: undefined });
-  }, [showGuide, router]);
+    if (hasSeenGuide) return;
+    setGuideOpen(true);
+    markGuideSeen();
+  }, [showGuide, router, hasSeenGuide, markGuideSeen]);
   // The tab bar now floats (position: 'absolute' in app/(app)/_layout.tsx)
   // instead of reserving its own space, so scroll content needs its own
   // bottom padding to clear it — same reasoning on every Tabs.Screen.
