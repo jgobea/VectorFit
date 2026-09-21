@@ -86,11 +86,11 @@ export const GUIDE_STEPS: GuideStep[] = [
     accentColor: Colors.cyanVivid,
     es: {
       title: 'Perfil',
-      body: 'Toca cualquier ajuste para editarlo al instante: tu edad, altura, peso, género y tipo de cuerpo; tu objetivo principal, nivel de experiencia, frecuencia de entrenamiento y lesiones; y cómo se comporta tu entrenador IA — su intensidad de feedback, si te habla en voz alta (con volumen ajustable), su idioma y su estilo de coaching. También cambias el idioma de toda la app, ves tu historial de entrenamientos, y desde ahí cierras sesión, cambias tu contraseña o eliminas tu cuenta.',
+      body: 'Toca cualquier ajuste para editarlo al instante: tu edad, altura, peso, género y tipo de cuerpo; tu objetivo principal, nivel de experiencia, frecuencia de entrenamiento y lesiones; y cómo se comporta tu entrenador IA, su intensidad de feedback, si te habla en voz alta (con volumen ajustable), su idioma y su estilo de coaching. También cambias el idioma de toda la app, ves tu historial de entrenamientos, y desde ahí cierras sesión, cambias tu contraseña o eliminas tu cuenta.',
     },
     en: {
       title: 'Profile',
-      body: "Tap any setting to edit it instantly: your age, height, weight, gender, and body type; your primary goal, experience level, training frequency, and injuries; and how your AI trainer behaves — its feedback intensity, whether it speaks out loud (with adjustable volume), its language, and its coaching style. You also change the whole app's language here, see your workout history, and log out, change your password, or delete your account.",
+      body: "Tap any setting to edit it instantly: your age, height, weight, gender, and body type; your primary goal, experience level, training frequency, and injuries; and how your AI trainer behaves, its feedback intensity, whether it speaks out loud (with adjustable volume), its language, and its coaching style. You also change the whole app's language here, see your workout history, and log out, change your password, or delete your account.",
     },
   },
 ];

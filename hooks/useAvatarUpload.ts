@@ -49,7 +49,7 @@ export function useAvatarUpload(userId: string | undefined) {
         ? await ImagePicker.requestCameraPermissionsAsync()
         : await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      setError('Permission denied — enable photo access in Settings to change your picture.');
+      setError('Permission denied, enable photo access in Settings to change your picture.');
       return null;
     }
 

@@ -81,7 +81,7 @@ export function UpcomingRoutineDayRow({ scheduled }: UpcomingRoutineDayRowProps)
           {day.exercises.map((e) => (
             <Text key={e.id} className="font-body text-small text-secondary-light dark:text-secondary">
               • {translateExerciseName(t, e.exercise?.name)}
-              {e.sets && e.reps ? ` — ${e.sets}×${e.reps}` : ''}
+              {e.sets && e.reps ? `, ${e.sets}×${e.reps}` : ''}
             </Text>
           ))}
         </View>
