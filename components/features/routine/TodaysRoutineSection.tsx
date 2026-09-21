@@ -1,7 +1,8 @@
 import { Feather } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 
@@ -56,8 +57,20 @@ export function TodaysRoutineSection({
 }: TodaysRoutineSectionProps) {
   const router = useRouter();
   const { t } = useTranslation();
-  const { isComplete: isDayComplete, isLoading: isDayCompletionLoading, complete } = useTodayDayCompletion();
+  const { isComplete: isDayComplete, isLoading: isDayCompletionLoading, complete, reload: reloadDayCompletion } = useTodayDayCompletion();
   const [confirmOpen, setConfirmOpen] = useState(false);
+
+  // Dashboard is a Tabs screen that stays mounted — adding an exercise to
+  // today's day from Routine Builder or Chat (both separate screens) can
+  // un-complete today server-side (useRoutineExerciseActions.addExercise),
+  // but this component's own isDayComplete state was only ever loaded once
+  // on mount. Refetch whenever this tab regains focus so coming back here
+  // reflects that.
+  useFocusEffect(
+    useCallback(() => {
+      reloadDayCompletion();
+    }, [reloadDayCompletion])
+  );
   const [isFinishing, setIsFinishing] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [timingExercise, setTimingExercise] = useState<RoutineExercise | null>(null);

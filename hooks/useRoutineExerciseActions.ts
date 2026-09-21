@@ -1,6 +1,8 @@
 import { useCallback } from 'react';
 
+import { toLocalDateKey } from '@/lib/routineSchedule';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/stores/authStore';
 import { useRoutineStore } from '@/stores/routineStore';
 import type { RoutineExercise } from '@/types/routine';
 import type { Exercise } from '@/types/workout';
@@ -15,6 +17,7 @@ const DEFAULT_DURATION_SECONDS = 30;
 // Supabase response before patching the store (need the real row id or the
 // swapped order_index pair); field edits patch optimistically.
 export function useRoutineExerciseActions() {
+  const userId = useAuthStore((s) => s.user?.id);
   const routine = useRoutineStore((s) => s.routine);
   const setDayExercises = useRoutineStore((s) => s.setDayExercises);
   const patchExercise = useRoutineStore((s) => s.patchExercise);
@@ -49,8 +52,21 @@ export function useRoutineExerciseActions() {
         .single();
 
       if (data) setDayExercises(dayId, [...day.exercises, data]);
+
+      // Adding an exercise to a day already marked done for today means
+      // there's unfinished work again — undo that mark so Dashboard's
+      // Finish Day flow (TodaysRoutineSection) reflects it accurately. A
+      // day is matched by weekday, not by row id, so this only fires when
+      // the edited day actually is today's.
+      if (userId && day.day_of_week === new Date().getDay()) {
+        await supabase
+          .from('routine_day_completions')
+          .delete()
+          .eq('user_id', userId)
+          .eq('completed_date', toLocalDateKey(new Date()));
+      }
     },
-    [routine, setDayExercises]
+    [routine, setDayExercises, userId]
   );
 
   const updateExercise = useCallback(
