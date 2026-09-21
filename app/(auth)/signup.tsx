@@ -6,7 +6,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { GoogleAuthButton } from '@/components/ui/GoogleAuthButton';
 import { Input } from '@/components/ui/Input';
+import { signInWithGoogle } from '@/lib/googleAuth';
 import { supabase } from '@/lib/supabase';
 
 // Same shape as hooks/useLogin.ts's inline validation — matches
@@ -28,6 +30,7 @@ export default function SignUpScreen() {
   const [passwordTouched, setPasswordTouched] = useState(false);
   const [confirmTouched, setConfirmTouched] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -58,6 +61,17 @@ export default function SignUpScreen() {
       return;
     }
     setSuccess(true);
+  }
+
+  // Same account-creation path as email/password (auth.users' trigger
+  // creates the profile row either way) — gated behind the same terms
+  // checkbox since it's still creating an account, not just logging in.
+  async function submitWithGoogle() {
+    setError(null);
+    setIsGoogleSubmitting(true);
+    const googleError = await signInWithGoogle();
+    setIsGoogleSubmitting(false);
+    if (googleError) setError(googleError);
   }
 
   return (
@@ -127,6 +141,15 @@ export default function SignUpScreen() {
 
               {error && <Text className="text-center font-body text-small text-error">{error}</Text>}
               <Button label={t('login.signUp')} onPress={submit} loading={isSubmitting} disabled={!canSubmit} />
+
+              <View className="flex-row items-center gap-3">
+                <View className="h-px flex-1 bg-border-light dark:bg-border" />
+                <Text className="font-body text-small text-secondary-light dark:text-secondary">{t('common.orContinueWith')}</Text>
+                <View className="h-px flex-1 bg-border-light dark:bg-border" />
+              </View>
+
+              <GoogleAuthButton onPress={submitWithGoogle} loading={isGoogleSubmitting} disabled={!acceptedTerms} />
+
               <Button label={t('signup.backToLogin')} variant="secondary" onPress={() => router.back()} />
             </View>
           )}

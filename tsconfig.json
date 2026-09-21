@@ -5,8 +5,12 @@
     // Metro resolves platform-specific files (.native.tsx, .web.tsx, ...)
     // automatically; tsc doesn't unless told to. Needed as of
     // LiveReviewWorkout.native.tsx/.web.tsx — first cross-platform split in
-    // this project.
-    "moduleSuffixes": [".ios", ".android", ".native", ".web", ""],
+    // this project. "" (no suffix) before ".web": our own .native/.web
+    // pairs are unaffected (.native always matches first), but this stops
+    // tsc from preferring a third-party package's `.web.d.ts` — a much
+    // narrower type — over its real platform-agnostic `.d.ts` for every
+    // other import project-wide (e.g. @react-native-google-signin/google-signin).
+    "moduleSuffixes": [".ios", ".android", ".native", "", ".web"],
     "paths": {
       "@/*": [
         "./*"

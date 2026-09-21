@@ -1,6 +1,20 @@
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { useCallback, useState } from 'react';
 
 import { supabase } from '@/lib/supabase';
+
+// Google's native SDK keeps its own signed-in session on the device,
+// separate from Supabase's — signing out of Supabase alone leaves it
+// cached, so tapping "Continue with Google" again silently reuses the same
+// account instead of showing the account picker. Best-effort: a no-op (and
+// safe to call) for a user who never signed in with Google at all.
+async function signOutOfGoogle() {
+  try {
+    await GoogleSignin.signOut();
+  } catch {
+    // Ignore — nothing to sign out of, or Play Services unavailable.
+  }
+}
 
 // DESIGN_SPEC.md §E.7 Account & Logout: change password, logout, delete
 // account. Logout and delete both need a confirmation modal in the UI layer
@@ -25,7 +39,7 @@ export function useAccountActions() {
 
   const logout = useCallback(async () => {
     setIsLoggingOut(true);
-    await supabase.auth.signOut();
+    await Promise.all([supabase.auth.signOut(), signOutOfGoogle()]);
     setIsLoggingOut(false);
     // app/_layout.tsx's onAuthStateChange listener clears the session store
     // and app/(app)/_layout.tsx redirects to /(auth)/login — no navigation
@@ -44,7 +58,7 @@ export function useAccountActions() {
     // The auth user row is gone server-side, but per Supabase's security
     // notes an existing access token isn't invalidated by deleting the
     // user — sign out explicitly to clear local session state.
-    await supabase.auth.signOut();
+    await Promise.all([supabase.auth.signOut(), signOutOfGoogle()]);
     setIsDeleting(false);
     return true;
   }, []);

@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { GoogleAuthButton } from '@/components/ui/GoogleAuthButton';
 import { Input } from '@/components/ui/Input';
 import { LanguageSwitch } from '@/components/ui/LanguageSwitch';
 import { useLogin } from '@/hooks/useLogin';
@@ -23,10 +24,12 @@ export default function LoginScreen() {
     passwordError,
     formError,
     isSubmitting,
+    isGoogleSubmitting,
     canSubmit,
     onEmailBlur,
     onPasswordBlur,
     submit,
+    submitWithGoogle,
   } = useLogin();
 
   const passwordRef = useRef<TextInput>(null);
@@ -99,6 +102,14 @@ export default function LoginScreen() {
             </View>
 
             <Button label={t('login.submit')} onPress={submit} disabled={!canSubmit} loading={isSubmitting} />
+
+            <View className="flex-row items-center gap-3">
+              <View className="h-px flex-1 bg-border-light dark:bg-border" />
+              <Text className="font-body text-small text-secondary-light dark:text-secondary">{t('common.orContinueWith')}</Text>
+              <View className="h-px flex-1 bg-border-light dark:bg-border" />
+            </View>
+
+            <GoogleAuthButton onPress={submitWithGoogle} loading={isGoogleSubmitting} />
 
             <Link href="/(auth)/signup" asChild>
               <Button label={t('login.signUp')} variant="secondary" />

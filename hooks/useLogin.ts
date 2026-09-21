@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useState } from 'react';
 
+import { signInWithGoogle } from '@/lib/googleAuth';
 import { supabase } from '@/lib/supabase';
 
 const REMEMBERED_EMAIL_KEY = 'vectorfit-remembered-email';
@@ -14,6 +15,7 @@ export function useLogin() {
   const [emailTouched, setEmailTouched] = useState(false);
   const [passwordTouched, setPasswordTouched] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -49,6 +51,22 @@ export function useLogin() {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   }
 
+  // Same as email/password: signInWithIdToken both creates a brand-new
+  // account (first time this Google account signs in) and logs an existing
+  // one back in — there's no separate "register with Google" step.
+  async function submitWithGoogle() {
+    setFormError(null);
+    setIsGoogleSubmitting(true);
+    const error = await signInWithGoogle();
+    setIsGoogleSubmitting(false);
+
+    if (error) {
+      setFormError(error);
+      return;
+    }
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }
+
   return {
     email,
     setEmail,
@@ -60,9 +78,11 @@ export function useLogin() {
     passwordError,
     formError,
     isSubmitting,
+    isGoogleSubmitting,
     canSubmit,
     onEmailBlur: () => setEmailTouched(true),
     onPasswordBlur: () => setPasswordTouched(true),
     submit,
+    submitWithGoogle,
   };
 }
