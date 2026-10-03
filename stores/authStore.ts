@@ -1,11 +1,11 @@
-import type { Session, User } from '@supabase/supabase-js';
+import type { LocalSession } from '@/lib/local/auth';
 import { create } from 'zustand';
 
 interface AuthState {
-  session: Session | null;
-  user: User | null;
+  session: LocalSession | null;
+  user: LocalSession['user'] | null;
   isInitializing: boolean;
-  setSession: (session: Session | null) => void;
+  setSession: (session: LocalSession | null) => void;
   setInitializing: (isInitializing: boolean) => void;
 }
 

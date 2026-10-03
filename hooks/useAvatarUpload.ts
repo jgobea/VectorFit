@@ -1,3 +1,4 @@
+import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -6,21 +7,17 @@ import { Alert } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { useUserStore } from '@/stores/userStore';
 
+// OFFLINE BUILD: no Supabase Storage bucket. The picked image is copied into
+// the app's own document directory (the picker's cache copy can be cleaned up
+// by the OS) and users.avatar_url holds that local file URI.
 async function uploadAvatar(userId: string, asset: ImagePicker.ImagePickerAsset): Promise<string> {
   const mimeType = asset.mimeType ?? 'image/jpeg';
   const extension = mimeType.split('/')[1] ?? 'jpg';
-  const path = `${userId}/avatar-${Date.now()}.${extension}`;
-
-  const response = await fetch(asset.uri);
-  const arrayBuffer = await response.arrayBuffer();
-
-  const { error: uploadError } = await supabase.storage
-    .from('avatars')
-    .upload(path, arrayBuffer, { contentType: mimeType, upsert: true });
-  if (uploadError) throw uploadError;
-
-  const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-  return data.publicUrl;
+  const dir = `${FileSystem.documentDirectory}avatars/`;
+  await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+  const destination = `${dir}${userId}-avatar-${Date.now()}.${extension}`;
+  await FileSystem.copyAsync({ from: asset.uri, to: destination });
+  return destination;
 }
 
 // DESIGN_SPEC.md §E.1/Interactions: "Tap profile picture to upload new photo

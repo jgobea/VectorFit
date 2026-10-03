@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "VectorFit",
-    "slug": "VectorFit",
+    "name": "VectorFit Local",
+    "slug": "VectorFitLocal",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "vectorfit",
+    "scheme": "vectorfitlocal",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.vectorfit.app",
+      "bundleIdentifier": "com.vectorfit.local",
       "infoPlist": {
         "NSCameraUsageDescription": "Camera access is needed for pose estimation",
         "NSPhotoLibraryUsageDescription": "Photo library access is needed to set your profile picture"
@@ -22,7 +22,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.vectorfit.app",
+      "package": "com.vectorfit.local",
       "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
@@ -64,8 +64,7 @@
         {
           "recordAudioAndroid": false
         }
-      ],
-      "@react-native-google-signin/google-signin"
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

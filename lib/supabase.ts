@@ -1,27 +1,22 @@
-import 'react-native-url-polyfill/auto';
+import { auth } from './local/auth';
+import { from } from './local/db';
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    'Missing EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_ANON_KEY — check .env'
-  );
-}
-
-// No `Database` generic yet: generating it requires a running local or
-// linked Supabase project (`npx supabase gen types typescript --local`),
-// which this environment doesn't have. INSTRUCTIONS.md forbids hand-writing
-// Supabase types, so wire `createClient<Database>(...)` once generated
-// rather than stubbing one here.
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storage: AsyncStorage,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
+// OFFLINE BUILD: this file replaces the real Supabase client. It exposes the
+// slice of the supabase-js API the app uses (auth, from(), functions.invoke),
+// backed by an on-device database in ./local/ instead of the network. Every
+// hook and screen keeps importing `supabase` from here unchanged.
+export const supabase = {
+  auth,
+  from,
+  functions: {
+    // The only Edge Function the app invokes through supabase-js; `chat` and
+    // `live-review-feedback` are replaced by lib/gemini.ts / lib/liveReviewCoach.ts.
+    async invoke(name: string, _options?: unknown) {
+      if (name === 'delete-account') {
+        const { error } = await auth.deleteCurrentUser();
+        return { data: null, error };
+      }
+      return { data: null, error: { message: `Edge function "${name}" is not available offline` } };
+    },
   },
-});
+};

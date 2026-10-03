@@ -1,47 +1,32 @@
-import { fetch } from 'expo/fetch';
-
-import { supabase } from './supabase';
+import { i18next } from '@/lib/i18n';
+import { offlineChatReply, type CoachLang } from '@/lib/offlineCoach';
+import { useUserStore } from '@/stores/userStore';
 
 export interface ChatMessagePayload {
   role: 'user' | 'assistant';
   content: string;
 }
 
-// The Gemini API key never reaches the client: this only streams the
-// response from supabase/functions/chat, which is where the actual
-// @google/generative-ai calls happen.
+function coachLanguage(): CoachLang {
+  const preferred = useUserStore.getState().profile?.language_preference ?? i18next.language;
+  return preferred === 'es' ? 'es' : 'en';
+}
+
+// OFFLINE BUILD: no Gemini, no Edge Function. Replies come from
+// lib/offlineCoach.ts and are streamed in small chunks so the chat UI keeps
+// its typing effect.
 export async function streamChatReply(
   messages: ChatMessagePayload[],
   onChunk: (textChunk: string) => void,
   signal?: AbortSignal
 ): Promise<void> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) {
-    throw new Error('Not authenticated');
-  }
+  const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+  const reply = offlineChatReply(lastUser?.content ?? '', coachLanguage());
 
-  const response = await fetch(`${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/chat`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${session.access_token}`,
-    },
-    body: JSON.stringify({ messages }),
-    signal,
-  });
-
-  if (!response.ok || !response.body) {
-    throw new Error(`Chat request failed with status ${response.status}`);
-  }
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    onChunk(decoder.decode(value, { stream: true }));
+  await new Promise((resolve) => setTimeout(resolve, 400));
+  for (let i = 0; i < reply.length; i += 6) {
+    if (signal?.aborted) return;
+    onChunk(reply.slice(i, i + 6));
+    await new Promise((resolve) => setTimeout(resolve, 15));
   }
 }

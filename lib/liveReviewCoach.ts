@@ -1,6 +1,6 @@
-import { fetch } from 'expo/fetch';
-
-import { supabase } from './supabase';
+import { i18next } from '@/lib/i18n';
+import { offlineSetNote, type CoachLang } from '@/lib/offlineCoach';
+import { useUserStore } from '@/stores/userStore';
 
 export interface FeedbackCount {
   text: string;
@@ -20,32 +20,10 @@ export interface SetCoachRequest {
   isWorkoutComplete: boolean;
 }
 
-// Short between-set coaching note from supabase/functions/live-review-feedback
-// — same auth pattern as lib/gemini.ts's streamChatReply, but a single JSON
-// response instead of a stream (the reply is short enough that streaming
-// isn't worth the extra client complexity).
-export async function fetchSetCoachFeedback(request: SetCoachRequest, signal?: AbortSignal): Promise<string> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) {
-    throw new Error('Not authenticated');
-  }
-
-  const response = await fetch(`${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/live-review-feedback`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${session.access_token}`,
-    },
-    body: JSON.stringify(request),
-    signal,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Coach feedback request failed with status ${response.status}`);
-  }
-
-  const data = (await response.json()) as { message?: string };
-  return data.message ?? '';
+// OFFLINE BUILD: the between-set note is generated locally by
+// lib/offlineCoach.ts instead of the live-review-feedback Edge Function.
+export async function fetchSetCoachFeedback(request: SetCoachRequest, _signal?: AbortSignal): Promise<string> {
+  const preferred = useUserStore.getState().profile?.language_preference ?? i18next.language;
+  const lang: CoachLang = preferred === 'es' ? 'es' : 'en';
+  return offlineSetNote(request, lang);
 }

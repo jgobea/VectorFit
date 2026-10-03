@@ -1,56 +1,34 @@
-# Welcome to your Expo app 👋
+# VectorFit Local (offline build)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Same app as [VectorFit](https://github.com/jgobea/VectorFit) but with **no Supabase, Gemini or Google sign-in**:
+everything runs on the device, so it can be demoed with no internet.
 
-## Get started
+## What changed vs. the online version
 
-1. Install dependencies
+| Online                          | Offline                                                                 |
+| ------------------------------- | ----------------------------------------------------------------------- |
+| `@supabase/supabase-js` client  | `lib/supabase.ts` -> on-device DB in `lib/local/` (AsyncStorage)         |
+| Supabase Auth                   | `lib/local/auth.ts`: accounts stored on the device                       |
+| Storage bucket (avatars)        | Image copied to the app's document directory                             |
+| Gemini chat Edge Function       | `lib/gemini.ts` + `lib/offlineCoach.ts`: keyword-based canned replies    |
+| Live Review feedback Function   | `lib/liveReviewCoach.ts`: generated locally                              |
+| Continue with Google            | Removed                                                                  |
 
-   ```bash
-   npm install
-   ```
+Hooks and screens are untouched: they still call `supabase.from(...)`, which the local engine answers.
+QuickPose (camera pose tracking) already runs on-device.
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Run it
 
 ```bash
-npm run reset-project
+npm install
+npx expo run:android      # first run generates ./android and installs the dev build
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Needs `EXPO_PUBLIC_QUICKPOSE_SDK_KEY` in `.env` (see `.env.example`). Expo Go cannot run Live Review.
 
-### Other setup steps
+The package id is `com.vectorfit.local`, so it installs next to the online app without replacing it.
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## Demo account
 
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+`demo@vectorfit.app` / `demo123` (onboarding already completed). You can also register a new account;
+all data stays on the phone. Data persists across restarts; clearing app storage resets it.
