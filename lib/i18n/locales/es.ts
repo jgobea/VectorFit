@@ -404,6 +404,24 @@ export default {
     },
   },
   options: {
+    bodyTypeHelp: {
+      title: '¿Qué es {{name}}?',
+      open: '¿Qué es {{name}}?',
+      ectomorph: 'Complexión delgada y alargada, con hombros y caderas estrechos. Suele costarle ganar peso y músculo.',
+      mesomorph: 'Complexión atlética, con hombros anchos y cintura estrecha. Suele ganar músculo con relativa facilidad.',
+      endomorph: 'Complexión más ancha y redondeada. Suele ganar peso con facilidad, sobre todo en la zona media.',
+      disclaimer: 'Es solo una guía orientativa. Para saber tu tipo de cuerpo con certeza, consulta con un nutricionista deportivo.',
+    },
+    experienceHelp: {
+      beginner: 'Quieres empezar a entrenar o llevas poco tiempo.',
+      intermediate: 'Has entrenado antes y conoces los ejercicios básicos.',
+      advanced: 'Entrenas con regularidad desde hace tiempo.',
+    },
+    coachingStyleHelp: {
+      motivational: 'Te anima y celebra tus logros para que sigas constante.',
+      technical: 'Se centra en la técnica, con correcciones precisas y detalladas.',
+      balanced: 'Combina ánimo y correcciones técnicas.',
+    },
     gender: {
       male: 'Masculino',
       female: 'Femenino',

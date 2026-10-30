@@ -413,6 +413,24 @@ export default {
     },
   },
   options: {
+    bodyTypeHelp: {
+      title: 'What is {{name}}?',
+      open: 'What is {{name}}?',
+      ectomorph: 'A lean, long build with narrow shoulders and hips. Tends to find it hard to gain weight and muscle.',
+      mesomorph: 'An athletic build with broad shoulders and a narrow waist. Tends to gain muscle relatively easily.',
+      endomorph: 'A wider, rounder build. Tends to gain weight easily, especially around the midsection.',
+      disclaimer: 'This is only a rough guide. To know your body type for sure, check with a sports nutritionist.',
+    },
+    experienceHelp: {
+      beginner: 'You want to start training or have just started.',
+      intermediate: "You've trained before and know the basic exercises.",
+      advanced: 'You train regularly and have for a long time.',
+    },
+    coachingStyleHelp: {
+      motivational: 'Cheers you on and celebrates your wins to keep you consistent.',
+      technical: 'Focuses on technique, with precise, detailed corrections.',
+      balanced: 'A mix of encouragement and technical corrections.',
+    },
     gender: {
       male: 'Male',
       female: 'Female',

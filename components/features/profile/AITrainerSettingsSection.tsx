@@ -11,7 +11,13 @@ import { SelectField } from '@/components/ui/SelectField';
 import { SelectModal } from '@/components/ui/SelectModal';
 import { ToggleRow } from '@/components/ui/ToggleRow';
 import { Colors } from '@/constants/theme';
-import { COACHING_STYLE_OPTIONS, INTENSITY_LABEL_KEYS, INTENSITY_LEVELS } from '@/constants/profileOptions';
+import {
+  COACHING_STYLE_OPTIONS,
+  INTENSITY_LABEL_KEYS,
+  INTENSITY_LEVELS,
+  LANGUAGE_OPTIONS,
+  localizeOptions,
+} from '@/constants/profileOptions';
 import { playVoiceSample } from '@/lib/voiceSample';
 import type { UserProfile } from '@/types/user';
 
@@ -27,21 +33,10 @@ type QuickField = 'ai_feedback_intensity' | 'voice' | 'language_preference' | 'a
 
 const ACCENT = Colors.warning;
 
-// This is the AI trainer's own reply language — separate from the app's UI
-// language (LanguageSwitch, stores/localeStore.ts). A user can read the app
-// in Spanish while the coach replies in English, or vice versa.
-const LANGUAGE_OPTIONS = [
-  { value: 'en' as const, label: 'options.language.en' },
-  { value: 'es' as const, label: 'options.language.es' },
-  { value: 'fr' as const, label: 'options.language.fr' },
-  { value: 'de' as const, label: 'options.language.de' },
-  { value: 'pt' as const, label: 'options.language.pt' },
-];
-
 export function AITrainerSettingsSection({ profile, isEditing, onChange, onQuickSave, isSavingField }: AITrainerSettingsSectionProps) {
   const { t } = useTranslation();
-  const languageOptions = LANGUAGE_OPTIONS.map((o) => ({ ...o, label: t(o.label) }));
-  const coachingStyleOptions = COACHING_STYLE_OPTIONS.map((o) => ({ ...o, label: t(o.label) }));
+  const languageOptions = localizeOptions(t, LANGUAGE_OPTIONS);
+  const coachingStyleOptions = localizeOptions(t, COACHING_STYLE_OPTIONS);
 
   const [activeField, setActiveField] = useState<QuickField>(null);
   const [intensityDraft, setIntensityDraft] = useState<UserProfile['ai_feedback_intensity']>('moderate');

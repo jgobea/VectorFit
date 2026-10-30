@@ -5,10 +5,15 @@ import Animated, { SlideInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Card } from '@/components/ui/Card';
+import { OptionHelpButton } from '@/components/ui/OptionHelpButton';
 
 export interface SelectOption<T extends string> {
   value: T;
   label: string;
+  /** Short explanation shown under the label, inside the same card. */
+  description?: string;
+  /** Longer explanation behind a help button next to the option. */
+  help?: { title: string; message: string };
 }
 
 interface SelectModalProps<T extends string> {
@@ -68,11 +73,17 @@ export function SelectModal<T extends string>({
                     <Card
                       key={option.value}
                       onPress={() => onSelect(option.value)}
-                      className={`flex-row items-center justify-between ${isSelected ? 'border-cyan-vivid' : ''}`}
+                      className={`flex-row items-center gap-3 ${isSelected ? 'border-cyan-vivid' : ''}`}
                     >
-                      <Text className="font-body-semibold text-body text-primary-light dark:text-primary">
-                        {option.label}
-                      </Text>
+                      <View className="flex-1 gap-0.5">
+                        <Text className="font-body-semibold text-body text-primary-light dark:text-primary">
+                          {option.label}
+                        </Text>
+                        {!!option.description && (
+                          <Text className="font-body text-small text-secondary-light dark:text-secondary">{option.description}</Text>
+                        )}
+                      </View>
+                      {option.help && <OptionHelpButton title={option.help.title} message={option.help.message} />}
                       {isSelected && <Feather name="check" size={18} color="#00E5FF" />}
                     </Card>
                   );

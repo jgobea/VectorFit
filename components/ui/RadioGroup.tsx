@@ -1,10 +1,15 @@
 import { Text, View } from 'react-native';
 
 import { Card } from '@/components/ui/Card';
+import { OptionHelpButton } from '@/components/ui/OptionHelpButton';
 
 interface RadioOption<T extends string> {
   value: T;
   label: string;
+  /** Short explanation shown under the label, inside the same card. */
+  description?: string;
+  /** Longer explanation behind a help button at the card's right edge. */
+  help?: { title: string; message: string };
 }
 
 interface RadioGroupProps<T extends string> {
@@ -37,9 +42,13 @@ export function RadioGroup<T extends string>({ label, value, options, onChange }
               >
                 {selected && <View className="h-2.5 w-2.5 rounded-full bg-cyan-vivid" />}
               </View>
-              <Text className="font-body-medium text-body text-primary-light dark:text-primary">
-                {option.label}
-              </Text>
+              <View className="flex-1 gap-0.5">
+                <Text className="font-body-medium text-body text-primary-light dark:text-primary">{option.label}</Text>
+                {!!option.description && (
+                  <Text className="font-body text-small text-secondary-light dark:text-secondary">{option.description}</Text>
+                )}
+              </View>
+              {option.help && <OptionHelpButton title={option.help.title} message={option.help.message} />}
             </Card>
           );
         })}

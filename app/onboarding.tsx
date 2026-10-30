@@ -11,6 +11,7 @@ import { CoachStyleStep } from '@/components/features/onboarding/steps/CoachStyl
 import { GoalsStep } from '@/components/features/onboarding/steps/GoalsStep';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
+import { useLocaleStore } from '@/stores/localeStore';
 import { useUserStore } from '@/stores/userStore';
 import { DEFAULT_ONBOARDING_DRAFT, type OnboardingDraft } from '@/types/onboarding';
 
@@ -44,7 +45,9 @@ export default function OnboardingScreen() {
 
   const [checking, setChecking] = useState(true);
   const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState<OnboardingDraft>(DEFAULT_ONBOARDING_DRAFT);
+  // The coach's reply language starts as the language the app is shown in.
+  const appLocale = useLocaleStore((s) => s.locale);
+  const [draft, setDraft] = useState<OnboardingDraft>(() => ({ ...DEFAULT_ONBOARDING_DRAFT, language_preference: appLocale }));
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -84,7 +87,7 @@ export default function OnboardingScreen() {
     setIsSaving(true);
     const { data } = await supabase
       .from('users')
-      .update({ ...draft, onboarding_completed: true })
+      .update({ ...draft, injuries_limitations: draft.injuries_limitations.trim() || null, onboarding_completed: true })
       .eq('id', userId)
       .select()
       .single();

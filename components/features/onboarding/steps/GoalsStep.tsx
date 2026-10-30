@@ -1,10 +1,11 @@
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 
+import { Input } from '@/components/ui/Input';
 import { LabeledSlider } from '@/components/ui/LabeledSlider';
 import { RadioGroup } from '@/components/ui/RadioGroup';
 import { SelectField } from '@/components/ui/SelectField';
-import { EXPERIENCE_OPTIONS, GOAL_OPTIONS } from '@/constants/profileOptions';
+import { EXPERIENCE_OPTIONS, GOAL_OPTIONS, localizeOptions } from '@/constants/profileOptions';
 import type { OnboardingDraft } from '@/types/onboarding';
 
 interface StepProps {
@@ -14,8 +15,8 @@ interface StepProps {
 
 export function GoalsStep({ draft, onChange }: StepProps) {
   const { t } = useTranslation();
-  const goalOptions = GOAL_OPTIONS.map((o) => ({ ...o, label: t(o.label) }));
-  const experienceOptions = EXPERIENCE_OPTIONS.map((o) => ({ ...o, label: t(o.label) }));
+  const goalOptions = localizeOptions(t, GOAL_OPTIONS);
+  const experienceOptions = localizeOptions(t, EXPERIENCE_OPTIONS);
   return (
     <View className="gap-6">
       <SelectField
@@ -39,6 +40,13 @@ export function GoalsStep({ draft, onChange }: StepProps) {
         step={1}
         formatValue={(v) => t('profile.fitnessInfo.timesPerWeek', { n: Math.round(v) })}
         onChange={(v) => onChange({ workout_frequency_days: Math.round(v) })}
+      />
+      <Input
+        label={t('profile.fitnessInfo.injuries')}
+        placeholder={t('profile.fitnessInfo.injuriesPlaceholder')}
+        value={draft.injuries_limitations}
+        onChangeText={(injuries_limitations) => onChange({ injuries_limitations })}
+        multiline
       />
     </View>
   );

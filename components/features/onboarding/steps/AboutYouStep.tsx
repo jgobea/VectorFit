@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { RadioGroup } from '@/components/ui/RadioGroup';
 import { NumberStepperField } from '@/components/ui/NumberStepperField';
 import { Input } from '@/components/ui/Input';
-import { GENDER_OPTIONS } from '@/constants/profileOptions';
+import { GENDER_OPTIONS, localizeOptions } from '@/constants/profileOptions';
 import type { OnboardingDraft } from '@/types/onboarding';
 
 interface StepProps {
@@ -14,7 +14,7 @@ interface StepProps {
 
 export function AboutYouStep({ draft, onChange }: StepProps) {
   const { t } = useTranslation();
-  const genderOptions = GENDER_OPTIONS.map((o) => ({ ...o, label: t(o.label) }));
+  const genderOptions = localizeOptions(t, GENDER_OPTIONS);
   return (
     <View className="gap-6">
       <Input

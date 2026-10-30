@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 
 import { NumberStepperField } from '@/components/ui/NumberStepperField';
 import { RadioGroup } from '@/components/ui/RadioGroup';
-import { BODY_TYPE_OPTIONS } from '@/constants/profileOptions';
+import { BODY_TYPE_OPTIONS, localizeOptions } from '@/constants/profileOptions';
 import { cmToFeetInches } from '@/lib/units';
 import type { OnboardingDraft } from '@/types/onboarding';
 
@@ -14,7 +14,7 @@ interface StepProps {
 
 export function BodyStep({ draft, onChange }: StepProps) {
   const { t } = useTranslation();
-  const bodyTypeOptions = BODY_TYPE_OPTIONS.map((o) => ({ ...o, label: t(o.label) }));
+  const bodyTypeOptions = localizeOptions(t, BODY_TYPE_OPTIONS);
   return (
     <View className="gap-6">
       <View className="gap-1">

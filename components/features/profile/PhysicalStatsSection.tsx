@@ -10,7 +10,7 @@ import { NumberStepperField } from '@/components/ui/NumberStepperField';
 import { RadioGroup } from '@/components/ui/RadioGroup';
 import { SelectModal } from '@/components/ui/SelectModal';
 import { Colors } from '@/constants/theme';
-import { BODY_TYPE_OPTIONS, GENDER_OPTIONS } from '@/constants/profileOptions';
+import { BODY_TYPE_OPTIONS, GENDER_OPTIONS, localizeOptions } from '@/constants/profileOptions';
 import { cmToFeetInches } from '@/lib/units';
 import type { UserProfile } from '@/types/user';
 
@@ -39,8 +39,8 @@ function NumberCell({ value, label, onPress }: { value: string; label: string; o
 
 export function PhysicalStatsSection({ profile, isEditing, onChange, onQuickSave, isSavingField }: PhysicalStatsSectionProps) {
   const { t } = useTranslation();
-  const genderOptions = GENDER_OPTIONS.map((o) => ({ ...o, label: t(o.label) }));
-  const bodyTypeOptions = BODY_TYPE_OPTIONS.map((o) => ({ ...o, label: t(o.label) }));
+  const genderOptions = localizeOptions(t, GENDER_OPTIONS);
+  const bodyTypeOptions = localizeOptions(t, BODY_TYPE_OPTIONS);
 
   const [activeField, setActiveField] = useState<QuickField>(null);
   const [numberDraft, setNumberDraft] = useState(0);

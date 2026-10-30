@@ -46,9 +46,25 @@ or not. Use the list only to know, and mention when it's naturally relevant,
 that some of the exercises you or the user are discussing can be done with
 Live Review — e.g. offering "want to know which of these you can track with
 Live Review?" rather than volunteering the full list unprompted. Each listed
-exercise comes with a one-line description of the movement; use it to know
-exactly which exercise the app means by that name (e.g. "Cobra Wings" is done
-lying on the stomach), and stay consistent with it when explaining one.
+exercise comes with its Spanish name in the app and a one-line description of
+the movement; use them to know exactly which exercise the app means, and stay
+consistent with them when explaining one.
+
+How to identify an exercise (do this before every answer about one):
+1. Users often write in Spanish or another language. Translate the exercise
+   name to its standard English strength-training name first and think about
+   it in English, the way it's named in gyms and fitness resources; only the
+   final reply goes in the user's language. Many Spanish names are ambiguous
+   or shared with yoga poses, the English fitness term is not.
+2. If the name matches one of the app's exercises (by English or Spanish name),
+   it is that exercise, exactly as its description says.
+3. Never answer with a yoga pose. If a term could mean a yoga pose or a
+   strength/calisthenics exercise, it always means the exercise. Example:
+   "alas de cobra" is Cobra Wings, a prone back and shoulder strengthening
+   exercise (lying face down, lift the chest slightly off the floor while
+   pulling the bent arms back like wings and squeezing the shoulder blades,
+   then lower with control); it is NOT the yoga cobra pose (bhujangasana), so
+   never describe pressing up on straight arms or holding a backbend for it.
 
 Do not recommend exercises by default. Answer what was asked; only suggest
 specific exercises when the user asks for recommendations, a routine or
@@ -72,7 +88,13 @@ the surrounding prose brief and don't restate the sets/reps/rest numbers in
 words, the card already shows them. You may include more than one block in
 a reply (e.g. a short routine outline), one per exercise.
 max response length: 500 characters of prose — exercise blocks don't count
-toward it.`;
+toward it. One exception: when the user asks how to do / perform / execute a
+specific exercise (its steps, technique or form), completeness beats brevity —
+answer with a numbered list covering, in order: the starting position, the
+movement itself (including what the arms, legs and torso each do, so a key
+part of the exercise is never left out), how to return, how long to hold or a
+typical rep range, and 1-2 common mistakes to avoid. Up to 900 characters for
+that kind of answer, no exercise blocks unless they ask for alternatives.`;
 
 interface UserProfileRow {
   full_name: string | null;
@@ -136,9 +158,35 @@ interface LiveReviewExerciseRow {
 
 const UNCATEGORIZED_LABEL = 'Other';
 
-// Grouped by category, each name followed by its one-line description so
-// the model knows what movement the app means by it. Kept terse: every token
-// here is spent on every single chat request.
+// The Spanish names the app shows for these exercises
+// (lib/i18n/locales/es.ts, exercises.names). Users write them in chat as they
+// see them in the app, and some collide with yoga poses ("alas de cobra"), so
+// the model gets the exact mapping instead of guessing a translation. Keep in
+// sync with es.ts if a name changes there.
+const SPANISH_NAMES: Record<string, string> = {
+  Squats: 'Sentadillas',
+  'Push Ups': 'Flexiones de pecho',
+  'Jumping Jacks': 'Saltos de tijera',
+  'Sumo Squats': 'Sentadilla sumo',
+  Lunges: 'Zancadas',
+  'Sit Ups': 'Abdominales',
+  'Cobra Wings': 'Alas de cobra',
+  Plank: 'Plancha',
+  'Leg Raises': 'Elevación de piernas',
+  'Glute Bridge': 'Puente de glúteos',
+  'Overhead Dumbbell Press': 'Press de hombro con mancuernas',
+  'V-Ups': 'Abdominales en V',
+  'Lateral Raises': 'Elevaciones laterales',
+  'Front Raises': 'Elevaciones frontales',
+  'Hip Abduction Standing': 'Abducción de cadera de pie',
+  'Side Lunges': 'Zancadas laterales',
+  'Bicep Curls': 'Curl de bíceps',
+  'Knee Raises Bilateral': 'Elevación de rodillas',
+};
+
+// Grouped by category, each name followed by its Spanish name and one-line
+// description so the model knows what movement the app means by it. Kept
+// terse: every token here is spent on every single chat request.
 function buildLiveReviewContext(exercises: LiveReviewExerciseRow[]): string {
   if (exercises.length === 0) return '';
 
@@ -146,12 +194,16 @@ function buildLiveReviewContext(exercises: LiveReviewExerciseRow[]): string {
   for (const e of exercises) {
     const key = e.category ?? UNCATEGORIZED_LABEL;
     const list = byCategory.get(key);
-    const entry = e.instructions ? `${e.name} (${e.instructions.replace(/\.$/, '')})` : e.name;
+    const details = [
+      SPANISH_NAMES[e.name] && `es: ${SPANISH_NAMES[e.name]}`,
+      e.instructions?.replace(/\.$/, ''),
+    ].filter(Boolean);
+    const entry = details.length ? `${e.name} (${details.join('; ')})` : e.name;
     if (list) list.push(entry);
     else byCategory.set(key, [entry]);
   }
 
-  const lines = Array.from(byCategory.entries()).map(([category, names]) => `${category}: ${names.join('; ')}`);
+  const lines = Array.from(byCategory.entries()).map(([category, names]) => `${category}:\n- ${names.join('\n- ')}`);
   return `\n\nThis app's Live Review feature (real-time camera form-tracking during a set) currently supports these exercises:\n${lines.join('\n')}`;
 }
 

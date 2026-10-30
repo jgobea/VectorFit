@@ -11,7 +11,7 @@ import { RadioGroup } from '@/components/ui/RadioGroup';
 import { SelectField } from '@/components/ui/SelectField';
 import { SelectModal } from '@/components/ui/SelectModal';
 import { Colors } from '@/constants/theme';
-import { EXPERIENCE_OPTIONS, GOAL_OPTIONS } from '@/constants/profileOptions';
+import { EXPERIENCE_OPTIONS, GOAL_OPTIONS, localizeOptions } from '@/constants/profileOptions';
 import type { UserProfile } from '@/types/user';
 
 interface FitnessInfoSectionProps {
@@ -28,8 +28,8 @@ const ACCENT = Colors.greenNeon;
 
 export function FitnessInfoSection({ profile, isEditing, onChange, onQuickSave, isSavingField }: FitnessInfoSectionProps) {
   const { t } = useTranslation();
-  const goalOptions = GOAL_OPTIONS.map((o) => ({ ...o, label: t(o.label) }));
-  const experienceOptions = EXPERIENCE_OPTIONS.map((o) => ({ ...o, label: t(o.label) }));
+  const goalOptions = localizeOptions(t, GOAL_OPTIONS);
+  const experienceOptions = localizeOptions(t, EXPERIENCE_OPTIONS);
 
   const [activeField, setActiveField] = useState<QuickField>(null);
   const [frequencyDraft, setFrequencyDraft] = useState(3);

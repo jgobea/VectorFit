@@ -77,7 +77,16 @@ export function OnboardingStepFrame({
           NativeWind, and Android needs an explicit 'height' behavior since
           SDK 54's edge-to-edge default breaks native window resize. */}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <ScrollView contentContainerClassName="flex-grow px-6 pb-6 pt-8" keyboardShouldPersistTaps="handled">
+        {/* persistentScrollbar (Android): the scrollbar stays visible instead
+            of fading out, so steps taller than the screen (Goals, Coaching
+            Style) show there's more below. Android only draws it when the
+            content actually overflows. */}
+        <ScrollView
+          contentContainerClassName="flex-grow px-6 pb-6 pt-8"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator
+          persistentScrollbar
+        >
           <Text className="font-display text-h1 text-primary-light dark:text-primary">{title}</Text>
           <Text className="mb-8 mt-2 font-body text-body text-secondary-light dark:text-secondary">{subtitle}</Text>
           <View className="gap-6">{children}</View>
