@@ -3,10 +3,12 @@ import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 
+import { ExerciseDemoButton } from '@/components/features/ExerciseDemoButton';
+import { ExerciseDemoModal } from '@/components/features/ExerciseDemoModal';
 import { ExerciseIconPickerModal } from '@/components/features/routine/ExerciseIconPickerModal';
 import { Card } from '@/components/ui/Card';
 import { CompactNumberField } from '@/components/ui/CompactNumberField';
-import { translateExerciseName } from '@/constants/exerciseCatalog';
+import { hasExerciseDemo, translateExerciseName } from '@/constants/exerciseCatalog';
 import { DEFAULT_EXERCISE_ICON, isExerciseIconName, type ExerciseIconName } from '@/constants/exerciseIcons';
 import type { RoutineExercise } from '@/types/routine';
 
@@ -28,6 +30,7 @@ interface RoutineExerciseCardProps {
 export function RoutineExerciseCard({ exercise, dragHandle, onChange, onRemove }: RoutineExerciseCardProps) {
   const { t } = useTranslation();
   const [iconPickerOpen, setIconPickerOpen] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
   const icon: ExerciseIconName = isExerciseIconName(exercise.icon) ? exercise.icon : DEFAULT_EXERCISE_ICON;
   const isTimeBased = exercise.exercise?.measurement_type === 'time';
 
@@ -51,6 +54,9 @@ export function RoutineExerciseCard({ exercise, dragHandle, onChange, onRemove }
           </Text>
         </View>
         <View className="flex-row items-center gap-1">
+          {hasExerciseDemo(exercise.exercise) && (
+            <ExerciseDemoButton exerciseName={exercise.exercise?.name} size="sm" onPress={() => setDemoOpen(true)} />
+          )}
           {dragHandle}
           <Pressable
             onPress={onRemove}
@@ -90,6 +96,8 @@ export function RoutineExerciseCard({ exercise, dragHandle, onChange, onRemove }
           onChange={(rest_seconds) => onChange({ rest_seconds })}
         />
       </View>
+
+      <ExerciseDemoModal exercise={demoOpen ? (exercise.exercise ?? null) : null} onClose={() => setDemoOpen(false)} />
 
       <ExerciseIconPickerModal
         visible={iconPickerOpen}

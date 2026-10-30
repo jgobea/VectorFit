@@ -40,6 +40,9 @@ export function LiveReviewWorkout({ config, onExit }: LiveReviewWorkoutProps) {
   const session = usePoseSession(config);
   const [stage, setStage] = useState<WorkoutStage>('session');
   const [summary, setSummary] = useState<LiveReviewSummary | null>(null);
+  // Switched in place by the patched native view (patches/@quickpose+react-native),
+  // on the same running QuickPose session: no remount, no lost reps.
+  const [useFrontCamera, setUseFrontCamera] = useState(true);
 
   const exerciseName = translateExerciseName(t, config.exercise.name);
   const features = [config.exercise.quickpose_feature!, ...QUICKPOSE_BASE_FEATURES];
@@ -79,7 +82,7 @@ export function LiveReviewWorkout({ config, onExit }: LiveReviewWorkoutProps) {
       <QuickPoseView
         sdkKey={QUICKPOSE_SDK_KEY ?? ''}
         features={features}
-        useFrontCamera
+        useFrontCamera={useFrontCamera}
         style={{ flex: 1 }}
         featureStyles={{ 'overlay.wholeBody': QUICKPOSE_OVERLAY_STYLE }}
         onUpdate={session.onUpdate}
@@ -98,7 +101,11 @@ export function LiveReviewWorkout({ config, onExit }: LiveReviewWorkoutProps) {
       {stage === 'session' && (
         <>
           <SafeAreaView edges={['top']} className="absolute left-0 right-0 top-0">
-            <LiveReviewTopBar exerciseName={exerciseName} onClose={handleStop} />
+            <LiveReviewTopBar
+              exerciseName={exerciseName}
+              onFlipCamera={() => setUseFrontCamera((front) => !front)}
+              onClose={handleStop}
+            />
           </SafeAreaView>
           <SafeAreaView edges={['bottom']} className="absolute bottom-0 left-0 right-0">
             <LiveReviewBottomPanel
@@ -111,6 +118,8 @@ export function LiveReviewWorkout({ config, onExit }: LiveReviewWorkoutProps) {
               isPaused={session.isPaused}
               isSetComplete={session.isSetComplete}
               isLastSet={session.isLastSet}
+              timeMode={session.timeMode}
+              isHolding={session.isHolding}
               onTogglePause={() => session.setIsPaused((p) => !p)}
               onStop={handleStop}
               onFinishSet={handleFinishSet}
@@ -122,6 +131,7 @@ export function LiveReviewWorkout({ config, onExit }: LiveReviewWorkoutProps) {
         visible={stage === 'summary'}
         exerciseName={exerciseName}
         totalSets={config.totalSets}
+        isTimed={!!config.timeMode}
         summary={summary}
         coachFeedback={session.coachFeedback}
         isFetchingCoachFeedback={session.isFetchingCoachFeedback}

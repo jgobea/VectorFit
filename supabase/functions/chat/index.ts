@@ -26,6 +26,8 @@ name, goals, and progress when given; celebrate wins and normalize
 struggles. Keep replies concise and actionable. If you ever get asked to provide a workout plan,
 respond with a short, high-level outline of the plan and a few example exercises,
 but do not provide a full plan. Only talk about exercises and fitness;
+your scope is strength training, cardio and calisthenics only: you do not cover yoga poses,
+yoga flows or stretching routines presented as yoga, and say so briefly if asked about them;
 do not give medical advice or discuss nutrition or talk about anything else. avoid generic,
 vague, or repetitive responses; do not make up information or give advice that could be unsafe.
 avoid using filler phrases like "as an AI language model" or "I'm not a medical professional."
@@ -43,9 +45,19 @@ exercises are genuinely best for the user's goal first, Live Review-tracked
 or not. Use the list only to know, and mention when it's naturally relevant,
 that some of the exercises you or the user are discussing can be done with
 Live Review — e.g. offering "want to know which of these you can track with
-Live Review?" rather than volunteering the full list unprompted.
+Live Review?" rather than volunteering the full list unprompted. Each listed
+exercise comes with a one-line description of the movement; use it to know
+exactly which exercise the app means by that name (e.g. "Cobra Wings" is done
+lying on the stomach), and stay consistent with it when explaining one.
 
-Whenever you concretely recommend a specific exercise the user could add to
+Do not recommend exercises by default. Answer what was asked; only suggest
+specific exercises when the user asks for recommendations, a routine or
+alternatives, or when a suggestion is clearly the answer to their question
+(e.g. "what can I do for my lower back?"). A question about how to perform an
+exercise, about form, or a general fitness question gets an answer, not a
+list of exercises to add.
+
+When you do concretely recommend a specific exercise the user could add to
 their routine (not a vague mention), append one fenced block per exercise,
 exactly in this format, right after the sentence that names it:
 \`\`\`exercise
@@ -118,12 +130,15 @@ function buildProfileContext(profile: UserProfileRow | null): string {
 interface LiveReviewExerciseRow {
   name: string;
   category: string | null;
+  /** One-line description of the movement (exercises.instructions). */
+  instructions: string | null;
 }
 
 const UNCATEGORIZED_LABEL = 'Other';
 
-// Grouped by category and comma-joined, not one-per-line — this list can run
-// to 20-30 names and every token here is spent on every single chat request.
+// Grouped by category, each name followed by its one-line description so
+// the model knows what movement the app means by it. Kept terse: every token
+// here is spent on every single chat request.
 function buildLiveReviewContext(exercises: LiveReviewExerciseRow[]): string {
   if (exercises.length === 0) return '';
 
@@ -131,11 +146,12 @@ function buildLiveReviewContext(exercises: LiveReviewExerciseRow[]): string {
   for (const e of exercises) {
     const key = e.category ?? UNCATEGORIZED_LABEL;
     const list = byCategory.get(key);
-    if (list) list.push(e.name);
-    else byCategory.set(key, [e.name]);
+    const entry = e.instructions ? `${e.name} (${e.instructions.replace(/\.$/, '')})` : e.name;
+    if (list) list.push(entry);
+    else byCategory.set(key, [entry]);
   }
 
-  const lines = Array.from(byCategory.entries()).map(([category, names]) => `${category}: ${names.join(', ')}`);
+  const lines = Array.from(byCategory.entries()).map(([category, names]) => `${category}: ${names.join('; ')}`);
   return `\n\nThis app's Live Review feature (real-time camera form-tracking during a set) currently supports these exercises:\n${lines.join('\n')}`;
 }
 
@@ -231,7 +247,7 @@ Deno.serve(async (req) => {
         .single<UserProfileRow>(),
       authClient
         .from('exercises')
-        .select('name, category')
+        .select('name, category, instructions')
         .not('quickpose_feature', 'is', null)
         .order('category')
         .order('name')

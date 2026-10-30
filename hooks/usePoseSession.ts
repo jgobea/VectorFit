@@ -25,11 +25,27 @@ function topFeedbackCounts(counts: Map<string, number>, limit = 5): FeedbackCoun
     .slice(0, limit);
 }
 
+// Hold detection for time-based exercises (plank). QuickPose's fitness.plank
+// result is a 0-1 "how much this looks like the pose" value, the same signal
+// QuickPoseThresholdCounter thresholds for reps; here it gates a clock
+// instead. Two thresholds (enter high, leave lower) so a value hovering
+// around one cut-off doesn't flicker the clock on and off every frame.
+const HOLD_ENTER_THRESHOLD = 0.7;
+const HOLD_EXIT_THRESHOLD = 0.5;
+// Longest gap between two frames still counted as held time — a dropped or
+// late frame shouldn't add a jump of several seconds.
+const MAX_FRAME_GAP_MS = 500;
+
 export interface SessionConfig {
   exercise: Exercise;
+  /** Reps per set; for a timed exercise, target seconds per set (countdown) or 0 (stopwatch). */
   targetReps: number;
   totalSets: number;
   restSeconds: number;
+  /** Set for a time-based exercise (plank): the clock only runs while the
+   * pose is held. Countdown ends the set at `targetReps` seconds; stopwatch
+   * has no target and the user ends each set. */
+  timeMode?: 'countdown' | 'stopwatch';
   /** Set when this session was started from Today's Workout's camera
    * button — finishing the workout marks that routine exercise done for
    * today, same as the manual check does for non-Live-Review exercises. */
@@ -37,7 +53,10 @@ export interface SessionConfig {
 }
 
 export interface LiveReviewSummary {
+  /** Total reps, or total seconds held for a timed exercise. */
   totalReps: number;
+  /** Best single set: most reps, or longest hold in seconds. */
+  bestSet: number;
   avgFormScore: number | null;
   bestRepScore: number | null;
   feedbackSummary: string | null;
@@ -94,6 +113,13 @@ export function usePoseSession(config: SessionConfig) {
   const [isPaused, setIsPaused] = useState(false);
   const [coachFeedback, setCoachFeedback] = useState<string | null>(null);
   const [isFetchingCoachFeedback, setIsFetchingCoachFeedback] = useState(false);
+  // Timed exercises only: whether the pose is held right now, plus the
+  // running held time behind `reps` (which holds whole seconds for them).
+  const [isHolding, setIsHolding] = useState(false);
+  const holdingRef = useRef(false);
+  const heldMsRef = useRef(0);
+  const lastFrameAtRef = useRef<number | null>(null);
+  const targetBeepedRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -115,12 +141,47 @@ export function usePoseSession(config: SessionConfig) {
   }, [coachFeedback, voiceProfile?.ai_voice_feedback_enabled, voiceProfile?.ai_voice_volume, voiceProfile?.language_preference]);
 
   const featureKey = config.exercise.quickpose_feature ?? '';
-  const isSetComplete = reps >= config.targetReps;
+  const timeMode = config.timeMode;
+  // Stopwatch has no target: any held time lets the user end the set.
+  const isSetComplete = timeMode === 'stopwatch' ? reps > 0 : reps >= config.targetReps;
   const isLastSet = currentSet >= config.totalSets;
+
+  const playBeep = useCallback(() => {
+    repSoundPlayer.seekTo(0);
+    repSoundPlayer.play();
+  }, [repSoundPlayer]);
+
+  // Advances the held-time clock by the time since the last frame, but only
+  // while the pose is held.
+  const trackHold = useCallback(
+    (value: number) => {
+      const now = Date.now();
+      const holding = holdingRef.current ? value >= HOLD_EXIT_THRESHOLD : value >= HOLD_ENTER_THRESHOLD;
+      if (holding && lastFrameAtRef.current != null) {
+        heldMsRef.current += Math.min(now - lastFrameAtRef.current, MAX_FRAME_GAP_MS);
+      }
+      lastFrameAtRef.current = now;
+      if (holding !== holdingRef.current) {
+        holdingRef.current = holding;
+        setIsHolding(holding);
+      }
+      const seconds = Math.floor(heldMsRef.current / 1000);
+      setReps(seconds);
+      if (timeMode === 'countdown' && !targetBeepedRef.current && seconds >= config.targetReps) {
+        targetBeepedRef.current = true;
+        playBeep();
+      }
+    },
+    [config.targetReps, playBeep, timeMode]
+  );
 
   const onUpdate = useCallback(
     (event: QuickPoseUpdateEvent) => {
-      if (isPaused || !featureKey) return;
+      if (isPaused || !featureKey) {
+        // Time spent paused must not count once tracking resumes.
+        lastFrameAtRef.current = null;
+        return;
+      }
       const { results, feedbacks } = event.nativeEvent;
 
       const value = results[featureKey];
@@ -128,13 +189,16 @@ export function usePoseSession(config: SessionConfig) {
         const score = Math.round(value * 100);
         setFormScore(score);
         scoresRef.current.push(score);
-        counterRef.current.count(value, (state) => {
-          if (state.type === 'poseComplete') {
-            setReps(state.count);
-            repSoundPlayer.seekTo(0);
-            repSoundPlayer.play();
-          }
-        });
+        if (timeMode) {
+          trackHold(value);
+        } else {
+          counterRef.current.count(value, (state) => {
+            if (state.type === 'poseComplete') {
+              setReps(state.count);
+              playBeep();
+            }
+          });
+        }
       }
 
       const feedback = feedbacks[featureKey];
@@ -145,7 +209,7 @@ export function usePoseSession(config: SessionConfig) {
         counts.set(feedback, (counts.get(feedback) ?? 0) + 1);
       }
     },
-    [featureKey, isPaused, repSoundPlayer]
+    [featureKey, isPaused, playBeep, timeMode, trackHold]
   );
 
   // Fire-and-forget: requests a short coaching note for the set that just
@@ -169,6 +233,7 @@ export function usePoseSession(config: SessionConfig) {
           totalSets: config.totalSets,
           repsCompleted,
           targetReps: config.targetReps,
+          measurement: timeMode ? 'time' : 'reps',
           feedbackCounts,
           previousSetFeedbackCounts: previousSetFeedbackCountsRef.current,
           isWorkoutComplete,
@@ -190,7 +255,7 @@ export function usePoseSession(config: SessionConfig) {
 
       previousSetFeedbackCountsRef.current = feedbackCounts;
     },
-    [config.exercise.name, config.targetReps, config.totalSets]
+    [config.exercise.name, config.targetReps, config.totalSets, timeMode]
   );
 
   // Archives the current set's tally and resets per-set counters — called
@@ -204,6 +269,11 @@ export function usePoseSession(config: SessionConfig) {
     currentSetFeedbackCountsRef.current = new Map();
     counterRef.current.reset();
     scoresRef.current = [];
+    heldMsRef.current = 0;
+    lastFrameAtRef.current = null;
+    holdingRef.current = false;
+    targetBeepedRef.current = false;
+    setIsHolding(false);
     setReps(0);
     setFormScore(0);
     setCurrentSet((s) => s + 1);
@@ -219,6 +289,7 @@ export function usePoseSession(config: SessionConfig) {
     const allScores = tallies.flatMap((t) => t.scores);
     return {
       totalReps,
+      bestSet: tallies.reduce((best, t) => Math.max(best, t.reps), 0),
       avgFormScore: allScores.length ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length) : null,
       bestRepScore: allScores.length ? Math.max(...allScores) : null,
       feedbackSummary: feedbacksRef.current.size ? Array.from(feedbacksRef.current).join('; ') : null,
@@ -246,7 +317,8 @@ export function usePoseSession(config: SessionConfig) {
           started_at: startedAtRef.current,
           ended_at: new Date().toISOString(),
           total_reps: summary.totalReps,
-          target_reps: config.targetReps * config.totalSets,
+          // Seconds instead of reps for a timed exercise; a stopwatch run has no target.
+          target_reps: timeMode === 'stopwatch' ? null : config.targetReps * config.totalSets,
           avg_form_score: summary.avgFormScore,
           best_rep_score: summary.bestRepScore,
           feedback_summary: summary.feedbackSummary,
@@ -291,6 +363,7 @@ export function usePoseSession(config: SessionConfig) {
     currentSet,
     reps,
     requestCoachFeedback,
+    timeMode,
     userId,
   ]);
 
@@ -322,6 +395,8 @@ export function usePoseSession(config: SessionConfig) {
     currentSet,
     totalSets: config.totalSets,
     targetReps: config.targetReps,
+    timeMode,
+    isHolding,
     reps,
     formScore,
     feedbackText,

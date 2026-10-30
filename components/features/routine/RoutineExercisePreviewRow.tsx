@@ -1,9 +1,12 @@
 import { Feather } from '@expo/vector-icons';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 
+import { ExerciseDemoButton } from '@/components/features/ExerciseDemoButton';
+import { ExerciseDemoModal } from '@/components/features/ExerciseDemoModal';
 import { DEFAULT_EXERCISE_ICON, isExerciseIconName } from '@/constants/exerciseIcons';
-import { translateExerciseName } from '@/constants/exerciseCatalog';
+import { hasExerciseDemo, translateExerciseName } from '@/constants/exerciseCatalog';
 import type { RoutineExercise } from '@/types/routine';
 
 const DIFFICULTY_COLOR: Record<string, string> = {
@@ -35,6 +38,7 @@ export function RoutineExercisePreviewRow({
   onStartTimer,
 }: RoutineExercisePreviewRowProps) {
   const { t } = useTranslation();
+  const [demoOpen, setDemoOpen] = useState(false);
   const isLiveReviewCompatible = !!item.exercise?.quickpose_feature;
   const isTimeBased = item.exercise?.measurement_type === 'time';
   const icon = isExerciseIconName(item.icon) ? item.icon : DEFAULT_EXERCISE_ICON;
@@ -66,6 +70,9 @@ export function RoutineExercisePreviewRow({
       </View>
 
       <View className="flex-row items-center gap-2">
+        {hasExerciseDemo(item.exercise) && (
+          <ExerciseDemoButton exerciseName={item.exercise?.name} onPress={() => setDemoOpen(true)} />
+        )}
         {isLiveReviewCompatible && (
           <Pressable
             onPress={onStartLiveReview}
@@ -101,6 +108,8 @@ export function RoutineExercisePreviewRow({
           <Feather name="check" size={18} color={isCompleted ? '#39FF14' : '#A0A0A8'} />
         </Pressable>
       </View>
+
+      <ExerciseDemoModal exercise={demoOpen ? (item.exercise ?? null) : null} onClose={() => setDemoOpen(false)} />
     </View>
   );
 }

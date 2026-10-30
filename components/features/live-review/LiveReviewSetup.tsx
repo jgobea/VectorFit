@@ -7,19 +7,25 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ExerciseDemoContent } from '@/components/features/ExerciseDemoContent';
 import { ExercisePickerModal } from '@/components/features/ExercisePickerModal';
 import { RestSlider } from '@/components/features/live-review/RestSlider';
 import { NumberStepperField } from '@/components/ui/NumberStepperField';
 import { InfoModal } from '@/components/ui/InfoModal';
-import { translateExerciseName } from '@/constants/exerciseCatalog';
+import { hasExerciseDemo, translateExerciseName } from '@/constants/exerciseCatalog';
 import { useExerciseCatalog } from '@/hooks/useExerciseCatalog';
 import type { SessionConfig } from '@/hooks/usePoseSession';
 import type { Exercise } from '@/types/workout';
+
+type TimeMode = 'countdown' | 'stopwatch';
+const TIME_MODES: TimeMode[] = ['countdown', 'stopwatch'];
 
 export interface LiveReviewPrefill {
   exerciseId: string;
   routineExerciseId: string;
   reps: number | null;
+  /** Target seconds, for a timed exercise (plank). */
+  durationSeconds: number | null;
   sets: number | null;
   restSeconds: number | null;
 }
@@ -39,6 +45,8 @@ export function LiveReviewSetup({ onStart, prefill }: LiveReviewSetupProps) {
   const [targetReps, setTargetReps] = useState(10);
   const [totalSets, setTotalSets] = useState(3);
   const [restSeconds, setRestSeconds] = useState(60);
+  const [timeMode, setTimeMode] = useState<TimeMode>('countdown');
+  const [targetSeconds, setTargetSeconds] = useState(30);
   const [infoOpen, setInfoOpen] = useState(false);
   const { exercises, isLoading: isCatalogLoading, error: catalogError } = useExerciseCatalog();
   const { t } = useTranslation();
@@ -55,10 +63,19 @@ export function LiveReviewSetup({ onStart, prefill }: LiveReviewSetupProps) {
     const match = exercises.find((e) => e.id === prefill.exerciseId);
     if (!match) return;
     setExercise(match);
+    if (match.measurement_type === 'time') setTimeMode(match.time_mode ?? 'countdown');
     if (prefill.reps != null) setTargetReps(prefill.reps);
+    if (prefill.durationSeconds != null) setTargetSeconds(prefill.durationSeconds);
     if (prefill.sets != null) setTotalSets(prefill.sets);
     if (prefill.restSeconds != null) setRestSeconds(prefill.restSeconds);
   }, [prefill, exercises]);
+
+  const isTimed = exercise?.measurement_type === 'time';
+
+  const selectExercise = (selected: Exercise) => {
+    setExercise(selected);
+    if (selected.measurement_type === 'time') setTimeMode(selected.time_mode ?? 'countdown');
+  };
 
   return (
     // 'bottom' excluded: the inline paddingBottom below already shrinks the
@@ -104,10 +121,46 @@ export function LiveReviewSetup({ onStart, prefill }: LiveReviewSetupProps) {
             </Card>
           </View>
 
-          <View className="flex-row gap-4">
-            <View className="flex-1">
-              <NumberStepperField label={t('liveReview.setup.reps')} value={targetReps} onChange={setTargetReps} />
+          {isTimed && (
+            <View className="gap-2">
+              <Text className="font-body-semibold text-small text-secondary-light dark:text-secondary">{t('liveReview.setup.timeMode')}</Text>
+              <View className="flex-row rounded-xl border border-border-light p-1 dark:border-border">
+                {TIME_MODES.map((mode) => (
+                  <Pressable
+                    key={mode}
+                    onPress={() => setTimeMode(mode)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: timeMode === mode }}
+                    className={`h-10 flex-1 items-center justify-center rounded-lg ${timeMode === mode ? 'bg-cyan-vivid/15' : ''}`}
+                  >
+                    <Text
+                      className={`font-body-semibold text-small ${timeMode === mode ? 'text-cyan-vivid' : 'text-secondary-light dark:text-secondary'}`}
+                    >
+                      {t(`liveReview.setup.${mode}`)}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
             </View>
+          )}
+
+          <View className="flex-row gap-4">
+            {!isTimed && (
+              <View className="flex-1">
+                <NumberStepperField label={t('liveReview.setup.reps')} value={targetReps} onChange={setTargetReps} />
+              </View>
+            )}
+            {isTimed && timeMode === 'countdown' && (
+              <View className="flex-1">
+                <NumberStepperField
+                  label={t('liveReview.setup.seconds')}
+                  value={targetSeconds}
+                  step={5}
+                  min={5}
+                  onChange={setTargetSeconds}
+                />
+              </View>
+            )}
             <View className="flex-1">
               <NumberStepperField label={t('liveReview.setup.sets')} value={totalSets} onChange={setTotalSets} />
             </View>
@@ -122,13 +175,21 @@ export function LiveReviewSetup({ onStart, prefill }: LiveReviewSetupProps) {
               exercise &&
               onStart({
                 exercise,
-                targetReps,
+                targetReps: isTimed ? (timeMode === 'countdown' ? targetSeconds : 0) : targetReps,
+                timeMode: isTimed ? timeMode : undefined,
                 totalSets,
                 restSeconds,
                 routineExerciseId: prefill?.exerciseId === exercise.id ? prefill.routineExerciseId : undefined,
               })
             }
           />
+
+          {exercise && hasExerciseDemo(exercise) && (
+            <View className="gap-3 border-t border-border-light pt-5 dark:border-border">
+              <Text className="font-display text-h3 text-primary-light dark:text-primary">{t('exercises.demo.section')}</Text>
+              <ExerciseDemoContent exercise={exercise} />
+            </View>
+          )}
         </Card>
       </ScrollView>
 
@@ -139,7 +200,7 @@ export function LiveReviewSetup({ onStart, prefill }: LiveReviewSetupProps) {
         error={catalogError}
         onClose={() => setPickerOpen(false)}
         onSelect={(selected) => {
-          setExercise(selected);
+          selectExercise(selected);
           setPickerOpen(false);
         }}
       />

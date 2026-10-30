@@ -26,6 +26,7 @@ export default function LiveReviewScreen() {
     exerciseId?: string;
     routineExerciseId?: string;
     reps?: string;
+    durationSeconds?: string;
     sets?: string;
     restSeconds?: string;
   }>();
@@ -41,6 +42,7 @@ export default function LiveReviewScreen() {
           exerciseId: params.exerciseId,
           routineExerciseId: params.routineExerciseId,
           reps: params.reps ? Number(params.reps) : null,
+          durationSeconds: params.durationSeconds ? Number(params.durationSeconds) : null,
           sets: params.sets ? Number(params.sets) : null,
           restSeconds: params.restSeconds ? Number(params.restSeconds) : null,
         }

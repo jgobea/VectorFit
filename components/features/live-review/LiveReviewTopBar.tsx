@@ -4,11 +4,12 @@ import { Pressable, Text, View } from 'react-native';
 
 interface LiveReviewTopBarProps {
   exerciseName: string;
+  onFlipCamera: () => void;
   onClose: () => void;
 }
 
-// DESIGN_SPEC.md §D.2: semi-transparent top bar, title + close button.
-export function LiveReviewTopBar({ exerciseName, onClose }: LiveReviewTopBarProps) {
+// DESIGN_SPEC.md §D.2: semi-transparent top bar, title + flip camera + close.
+export function LiveReviewTopBar({ exerciseName, onFlipCamera, onClose }: LiveReviewTopBarProps) {
   const { t } = useTranslation();
   return (
     <View className="flex-row items-center justify-between bg-black/40 px-4 py-3">
@@ -18,6 +19,15 @@ export function LiveReviewTopBar({ exerciseName, onClose }: LiveReviewTopBarProp
       <Text className="flex-1 pr-3 font-display text-h3 text-primary">
         {t('liveReview.topBarTitle', { name: exerciseName })}
       </Text>
+      <Pressable
+        onPress={onFlipCamera}
+        accessibilityRole="button"
+        accessibilityLabel={t('liveReview.flipCamera')}
+        hitSlop={8}
+        className="mr-2 h-10 w-10 items-center justify-center rounded-full bg-black/30 active:opacity-70"
+      >
+        <Feather name="refresh-cw" size={18} color="#FFFFFF" />
+      </Pressable>
       <Pressable
         onPress={onClose}
         accessibilityRole="button"

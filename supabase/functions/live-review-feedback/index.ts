@@ -59,6 +59,9 @@ Give ONE short, specific, actionable note:
   and do not mention camera setup unless the rule above says to.
 - If the whole workout just ended, close it out — do not reference "your next set" or anything
   forward-looking; if another set is coming next, the note IS about that next set.
+For a timed hold (plank), the numbers are seconds held while in position instead of reps, and the
+target is seconds (or none, for an open-ended stopwatch hold): coach the hold itself (body line,
+hips, breathing, staying in position), never talk about reps.
 Do not recite raw rep counts or scores back at the user unless directly relevant to the note.
 No greetings, no filler, no emojis. Max 140 characters.`;
 
@@ -99,6 +102,8 @@ interface RequestBody {
   totalSets: number;
   repsCompleted: number;
   targetReps: number;
+  /** 'time' = repsCompleted/targetReps are seconds held / target seconds (0 = no target). Older clients omit it. */
+  measurement?: 'reps' | 'time';
   feedbackCounts: FeedbackCount[];
   previousSetFeedbackCounts: FeedbackCount[] | null;
   isWorkoutComplete: boolean;
@@ -131,7 +136,8 @@ function isValidBody(value: unknown): value is RequestBody {
     typeof b.targetReps === 'number' &&
     isFeedbackCounts(b.feedbackCounts) &&
     (b.previousSetFeedbackCounts === null || isFeedbackCounts(b.previousSetFeedbackCounts)) &&
-    typeof b.isWorkoutComplete === 'boolean'
+    typeof b.isWorkoutComplete === 'boolean' &&
+    (b.measurement === undefined || b.measurement === 'reps' || b.measurement === 'time')
   );
 }
 
@@ -146,7 +152,9 @@ function buildSetSummary(body: RequestBody): string {
     body.isWorkoutComplete
       ? 'The whole workout just ended — this is the closing note, no next set is coming.'
       : 'Another set is coming up next.',
-    `Reps completed: ${body.repsCompleted} (target: ${body.targetReps})`,
+    body.measurement === 'time'
+      ? `Timed hold: ${body.repsCompleted}s held in position (target: ${body.targetReps > 0 ? `${body.targetReps}s` : 'none, open-ended'})`
+      : `Reps completed: ${body.repsCompleted} (target: ${body.targetReps})`,
     `Form corrections this set: ${formatCounts(body.feedbackCounts)}`,
   ];
   if (body.previousSetFeedbackCounts) {

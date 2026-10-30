@@ -108,6 +108,7 @@ export function TodaysRoutineSection({
         exerciseId: item.exercise_id,
         routineExerciseId: item.id,
         ...(item.reps != null && { reps: String(item.reps) }),
+        ...(item.duration_seconds != null && { durationSeconds: String(item.duration_seconds) }),
         ...(item.sets != null && { sets: String(item.sets) }),
         ...(item.rest_seconds != null && { restSeconds: String(item.rest_seconds) }),
       },

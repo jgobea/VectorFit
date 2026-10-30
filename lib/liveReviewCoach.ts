@@ -11,8 +11,11 @@ export interface SetCoachRequest {
   exerciseName: string;
   setNumber: number;
   totalSets: number;
+  /** Reps, or seconds held when `measurement` is 'time'. */
   repsCompleted: number;
+  /** Target reps, or target seconds (0 = no target, stopwatch). */
   targetReps: number;
+  measurement: 'reps' | 'time';
   feedbackCounts: FeedbackCount[];
   previousSetFeedbackCounts: FeedbackCount[] | null;
   /** True when there's no next set coming (last set finished, or an early

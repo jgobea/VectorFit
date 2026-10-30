@@ -1,5 +1,5 @@
 diff --git a/node_modules/@quickpose/react-native/android/src/main/java/ai/quickpose/reactnative/QuickPoseViewManager.kt b/node_modules/@quickpose/react-native/android/src/main/java/ai/quickpose/reactnative/QuickPoseViewManager.kt
-index 60955f4..b16fdc1 100644
+index 60955f4..ea8c7f3 100644
 --- a/node_modules/@quickpose/react-native/android/src/main/java/ai/quickpose/reactnative/QuickPoseViewManager.kt
 +++ b/node_modules/@quickpose/react-native/android/src/main/java/ai/quickpose/reactnative/QuickPoseViewManager.kt
 @@ -39,6 +39,29 @@ class QuickPoseViewManager : SimpleViewManager<FrameLayout>() {
@@ -32,7 +32,39 @@ index 60955f4..b16fdc1 100644
      override fun getName(): String = REACT_CLASS
  
      override fun createViewInstance(reactContext: ThemedReactContext): FrameLayout {
-@@ -98,7 +121,14 @@ class QuickPoseViewManager : SimpleViewManager<FrameLayout>() {
+@@ -82,8 +105,30 @@ class QuickPoseViewManager : SimpleViewManager<FrameLayout>() {
+ 
+     @ReactProp(name = "useFrontCamera", defaultBoolean = true)
+     fun setUseFrontCamera(view: FrameLayout, front: Boolean) {
++        val changed = front != useFrontCamera
+         useFrontCamera = front
+-        tryStart(view)
++        // Upstream only reads this prop before the first start, so flipping
++        // it mid-session did nothing. QuickPoseCameraSwitchView.start(front)
++        // is the SDK's own switch: it stops the other camera and shows this
++        // one, on the same running QuickPose graph.
++        if (hasStarted) {
++            if (changed) switchCamera(view, front)
++        } else {
++            tryStart(view)
++        }
++    }
++
++    private fun switchCamera(view: FrameLayout, front: Boolean) {
++        val csvView = cameraSwitchView ?: return
++        val activity = (view.context as? ThemedReactContext)?.currentActivity ?: return
++        val lifecycleOwner = activity as? androidx.lifecycle.LifecycleOwner ?: return
++        lifecycleOwner.lifecycleScope.launch {
++            try {
++                csvView.start(front)
++            } catch (e: Exception) {
++                android.util.Log.w(REACT_CLASS, "Camera switch failed", e)
++            }
++        }
+     }
+ 
+     private fun tryStart(view: FrameLayout) {
+@@ -98,7 +143,14 @@ class QuickPoseViewManager : SimpleViewManager<FrameLayout>() {
              }
  
              override fun onViewDetachedFromWindow(v: View) {
@@ -48,7 +80,7 @@ index 60955f4..b16fdc1 100644
                  cameraSwitchView?.stop()
              }
          })
-@@ -112,7 +142,8 @@ class QuickPoseViewManager : SimpleViewManager<FrameLayout>() {
+@@ -112,7 +164,8 @@ class QuickPoseViewManager : SimpleViewManager<FrameLayout>() {
      }
  
      override fun onDropViewInstance(view: FrameLayout) {
@@ -58,7 +90,7 @@ index 60955f4..b16fdc1 100644
          cameraSwitchView?.stop()
          quickPose = null
          cameraSwitchView = null
-@@ -167,6 +198,7 @@ class QuickPoseViewManager : SimpleViewManager<FrameLayout>() {
+@@ -167,6 +220,7 @@ class QuickPoseViewManager : SimpleViewManager<FrameLayout>() {
  
          val qp = QuickPose(activity, sdkKey = sdkKey)
          quickPose = qp
@@ -66,7 +98,7 @@ index 60955f4..b16fdc1 100644
  
          val csvView = QuickPoseCameraSwitchView(activity, qp)
          cameraSwitchView = csvView
-@@ -196,7 +228,19 @@ class QuickPoseViewManager : SimpleViewManager<FrameLayout>() {
+@@ -196,7 +250,19 @@ class QuickPoseViewManager : SimpleViewManager<FrameLayout>() {
                          val feedbacksJson = JSONObject()
                          for ((featureKey, feature) in currentFeatures) {
                              featureResults[feature]?.let { result ->

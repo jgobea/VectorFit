@@ -12,6 +12,7 @@ import { ChatHeader } from '@/components/features/ChatHeader';
 import { ChatInput } from '@/components/features/ChatInput';
 import { QuickSuggestionPills } from '@/components/features/QuickSuggestionPills';
 import { useChat } from '@/hooks/useChat';
+import { useChatStore } from '@/stores/chatStore';
 import type { ChatUIMessage } from '@/types/chat';
 
 export default function ChatScreen() {
@@ -44,6 +45,16 @@ export default function ChatScreen() {
       hideSub.remove();
     };
   }, []);
+
+  // Sent on the user's behalf by an exercise demo's "Ask the trainer"
+  // (components/features/ExerciseDemoContent.tsx). Waits for the history to
+  // load so the question lands after it, not before.
+  const pendingMessage = useChatStore((s) => s.pendingMessage);
+  useEffect(() => {
+    if (!pendingMessage || isLoading || isSending) return;
+    const message = useChatStore.getState().takePendingMessage();
+    if (message) sendMessage(message);
+  }, [pendingMessage, isLoading, isSending, sendMessage]);
 
   useEffect(() => {
     if (messages.length > 0) {

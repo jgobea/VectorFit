@@ -1,8 +1,12 @@
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { Button } from '@/components/ui/Button';
+import { translateQuickPoseFeedback } from '@/lib/quickposeFeedback';
 
 interface LiveReviewBottomPanelProps {
   formScore: number;
@@ -14,13 +18,43 @@ interface LiveReviewBottomPanelProps {
   isPaused: boolean;
   isSetComplete: boolean;
   isLastSet: boolean;
+  /** Set for a timed exercise (plank): `reps`/`targetReps` are seconds held / target seconds. */
+  timeMode?: 'countdown' | 'stopwatch';
+  isHolding?: boolean;
   onTogglePause: () => void;
   onStop: () => void;
   onFinishSet: () => void;
 }
 
-// DESIGN_SPEC.md §D.3: form score, feedback cue, rep/set counters,
-// pause/stop. `targetReps` is a threshold that surfaces the "finish set"
+function formatSeconds(total: number): string {
+  const m = Math.floor(total / 60);
+  return `${m}:${String(total % 60).padStart(2, '0')}`;
+}
+
+// Live form meter: fills left to right with QuickPose's 0-100 value for the
+// current frame. Deliberately unlabeled, the moving fill reads on its own.
+// Animated.View ignores className (NativeWind), so it's styled inline.
+function FormBar({ value }: { value: number }) {
+  const width = useSharedValue(0);
+
+  useEffect(() => {
+    width.value = withTiming(Math.max(0, Math.min(100, value)), { duration: 180 });
+  }, [value, width]);
+
+  const fillStyle = useAnimatedStyle(() => ({ width: `${width.value}%` }));
+
+  return (
+    <View className="h-2.5 overflow-hidden rounded-full bg-white/15">
+      <Animated.View style={[{ height: '100%', borderRadius: 999, overflow: 'hidden' }, fillStyle]}>
+        <LinearGradient colors={['#00E5FF', '#39FF14']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ flex: 1 }} />
+      </Animated.View>
+    </View>
+  );
+}
+
+// DESIGN_SPEC.md §D.3, compacted so less of the camera is covered: the cue,
+// the form meter, then one row with the count, the set and pause/stop as
+// icon buttons. `targetReps` is a threshold that surfaces the "finish set"
 // action once reached — it doesn't cap the counter, so reps keep climbing
 // past it for anyone training to failure (per user request).
 export function LiveReviewBottomPanel({
@@ -33,44 +67,71 @@ export function LiveReviewBottomPanel({
   isPaused,
   isSetComplete,
   isLastSet,
+  timeMode,
+  isHolding,
   onTogglePause,
   onStop,
   onFinishSet,
 }: LiveReviewBottomPanelProps) {
-  const { t } = useTranslation();
-  // QuickPose only sends a feedbackText string when it has a specific
-  // correction to make — no string doesn't mean "I can't see you," it means
-  // "nothing to correct right now." Before any frame has been tracked yet
-  // (formScore/reps both still 0) that's genuinely "get in frame"; once
-  // tracking is live, an empty correction is good news, so the fallback
-  // copy shouldn't read like a tracking failure at that point.
-  // Note: feedbackText itself (when present) comes straight from the
-  // QuickPose SDK's own per-frame English corrections — not translatable
-  // from here, unlike everything else on this panel.
+  const { t, i18n } = useTranslation();
+  // QuickPose only sends a feedback string when it has a specific correction
+  // to make; no string means "nothing to correct right now", not "I can't
+  // see you". Before any frame has been tracked (score and reps still 0)
+  // that's genuinely "get in frame".
   const hasStarted = formScore > 0 || reps > 0;
+  const idleCue = timeMode
+    ? isHolding
+      ? t('liveReview.holding')
+      : t('liveReview.getIntoPlank')
+    : hasStarted
+      ? t('liveReview.niceForm')
+      : t('liveReview.positionYourself');
+  const cue = feedbackText ? translateQuickPoseFeedback(feedbackText, i18n.language) : idleCue;
+
+  const count = timeMode ? formatSeconds(reps) : String(reps);
+  const target = timeMode === 'stopwatch' ? null : timeMode ? formatSeconds(targetReps) : String(targetReps);
+  const countColor = timeMode && !isHolding ? 'text-secondary' : 'text-green-neon';
 
   return (
-    <View className="gap-4 bg-black/50 px-4 pb-8 pt-5">
-      <View className="flex-row items-end justify-between">
-        <View>
-          <Text className="font-body text-small text-secondary">{t('liveReview.formScore')}</Text>
-          <Text className="font-display text-h1 text-cyan-vivid">{formScore}</Text>
+    <View className="gap-3 bg-black/50 px-4 pb-3 pt-3">
+      <Text className="min-h-[22px] font-body-semibold text-body text-primary" numberOfLines={2}>
+        {cue}
+      </Text>
+
+      <FormBar value={formScore} />
+
+      <View className="flex-row items-center gap-3">
+        <View className="flex-1 flex-row items-baseline">
+          <Text className={`font-display text-h2 ${countColor}`}>{count}</Text>
+          {target != null && <Text className="font-body-semibold text-body text-secondary"> / {target}</Text>}
+          {!timeMode && <Text className="ml-1.5 font-body text-small text-secondary">{t('liveReview.reps').toLowerCase()}</Text>}
         </View>
-        <View className="items-end">
-          <Text className="font-body text-small text-secondary">{t('liveReview.reps')}</Text>
-          <Text className="font-display text-h1 text-green-neon">
-            {reps}
-            <Text className="font-body-semibold text-h3 text-secondary"> / {targetReps}</Text>
-          </Text>
-          <Text className="mt-1 font-body-semibold text-body text-primary">
+
+        <View className="rounded-full bg-white/10 px-3 py-1.5">
+          <Text className="font-body-semibold text-small text-primary">
             {t('liveReview.setOf', { current: currentSet, total: totalSets })}
           </Text>
         </View>
-      </View>
 
-      <Text className="min-h-[22px] font-body-semibold text-body text-primary" numberOfLines={2}>
-        {feedbackText ?? (hasStarted ? t('liveReview.niceForm') : t('liveReview.positionYourself'))}
-      </Text>
+        <Pressable
+          onPress={onTogglePause}
+          accessibilityRole="button"
+          accessibilityLabel={isPaused ? t('liveReview.resume') : t('liveReview.pause')}
+          hitSlop={4}
+          className="h-11 w-11 items-center justify-center rounded-full border border-white/30 active:opacity-70"
+        >
+          <Feather name={isPaused ? 'play' : 'pause'} size={18} color="#FFFFFF" />
+        </Pressable>
+        <Pressable
+          onPress={onStop}
+          accessibilityRole="button"
+          accessibilityLabel={t('liveReview.stopSession')}
+          hitSlop={4}
+          className="h-11 w-11 items-center justify-center rounded-full bg-error active:opacity-80"
+        >
+          <Feather name="square" size={16} color="#FFFFFF" />
+        </Pressable>
+      </View>
 
       {isSetComplete && (
         <Button
@@ -78,25 +139,6 @@ export function LiveReviewBottomPanel({
           onPress={onFinishSet}
         />
       )}
-
-      <View className="flex-row gap-3">
-        <Pressable
-          onPress={onTogglePause}
-          accessibilityRole="button"
-          className="h-14 flex-1 flex-row items-center justify-center gap-2 rounded-xl border border-border active:opacity-70"
-        >
-          <Feather name={isPaused ? 'play' : 'pause'} size={18} color="#FFFFFF" />
-          <Text className="font-body-semibold text-base text-primary">{isPaused ? t('liveReview.resume') : t('liveReview.pause')}</Text>
-        </Pressable>
-        <Pressable
-          onPress={onStop}
-          accessibilityRole="button"
-          className="h-14 flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-error active:opacity-80"
-        >
-          <Feather name="square" size={18} color="#FFFFFF" />
-          <Text className="font-body-semibold text-base text-primary">{t('liveReview.stopSession')}</Text>
-        </Pressable>
-      </View>
     </View>
   );
 }

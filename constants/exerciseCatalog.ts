@@ -67,3 +67,27 @@ export function translateExerciseCategory(t: TFunction, category: string | null 
   const key = EXERCISE_CATEGORY_KEYS[category];
   return key ? t(key) : category;
 }
+
+// The 18 Live Review exercises' one-line demo descriptions live in
+// exercises.descriptions.*, keyed like their names (the same key also names
+// their GIF in the exercise-demos bucket). Anything else falls back to the
+// row's own English `instructions`.
+export function translateExerciseDescription(
+  t: TFunction,
+  exercise: { name: string; instructions: string | null } | null | undefined
+): string | null {
+  if (!exercise) return null;
+  const nameKey = EXERCISE_NAME_KEYS[exercise.name];
+  const key = nameKey?.replace('exercises.names.', 'exercises.descriptions.');
+  if (key && i18nHasKey(t, key)) return t(key);
+  return exercise.instructions;
+}
+
+function i18nHasKey(t: TFunction, key: string): boolean {
+  return t(key, { defaultValue: '' }) !== '';
+}
+
+/** Whether an exercise has a demonstration to show (its GIF is stored in `image_url`). */
+export function hasExerciseDemo(exercise: { image_url: string | null } | null | undefined): boolean {
+  return !!exercise?.image_url;
+}

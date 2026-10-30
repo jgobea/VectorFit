@@ -12,6 +12,8 @@ interface SessionSummaryModalProps {
   visible: boolean;
   exerciseName: string;
   totalSets: number;
+  /** Timed exercise (plank): totals are seconds held, not reps. */
+  isTimed?: boolean;
   summary: LiveReviewSummary | null;
   coachFeedback: string | null;
   isFetchingCoachFeedback: boolean;
@@ -55,6 +57,7 @@ export function SessionSummaryModal({
   visible,
   exerciseName,
   totalSets,
+  isTimed,
   summary,
   coachFeedback,
   isFetchingCoachFeedback,
@@ -82,7 +85,23 @@ export function SessionSummaryModal({
             </View>
 
             <Card className="py-1">
-              <StatRow icon="check-circle" value={summary?.totalReps ?? 0} label={t('liveReview.summary.totalReps')} />
+              {isTimed ? (
+                <>
+                  <StatRow
+                    icon="clock"
+                    value={t('liveReview.secondsShort', { n: summary?.totalReps ?? 0 })}
+                    label={t('liveReview.summary.totalHold')}
+                  />
+                  <Separator />
+                  <StatRow
+                    icon="trending-up"
+                    value={t('liveReview.secondsShort', { n: summary?.bestSet ?? 0 })}
+                    label={t('liveReview.summary.bestHold')}
+                  />
+                </>
+              ) : (
+                <StatRow icon="check-circle" value={summary?.totalReps ?? 0} label={t('liveReview.summary.totalReps')} />
+              )}
               <Separator />
               <StatRow
                 icon="layers"
