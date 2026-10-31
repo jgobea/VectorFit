@@ -50,7 +50,10 @@ export function Markdown({ content, className = '' }: MarkdownProps) {
               {block.items.map((item, itemIdx) => (
                 <View key={itemIdx} className="flex-row gap-1.5">
                   <Text className={className}>{block.ordered ? `${itemIdx + 1}.` : '•'}</Text>
-                  <InlineText text={item} className={`flex-1 ${className}`} />
+                  {/* shrink, not flex-1: the assistant bubble sizes to its content, and a
+                      flex-1 item contributes no width of its own, so a reply that was only
+                      a list collapsed to one character wide. */}
+                  <InlineText text={item} className={`shrink ${className}`} />
                 </View>
               ))}
             </View>
